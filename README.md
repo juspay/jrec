@@ -16,6 +16,8 @@ Based on [superrecord](https://hackage.haskell.org/package/superrecord), but sim
 
 * O(1) field access, O(n) construction.
 
+* PureScript-style partial records — if you have a `Record ("foo" := Int ': rest)`, `HasField "foo"` will work just fine.
+
 ## TODOs
 
 * Documentation.
