@@ -14,7 +14,7 @@ Based on [superrecord](https://hackage.haskell.org/package/superrecord), but sim
 
 * Provides `generic-lens` instances out of the box. Due to those custom instances, we support polymorphic updates.
 
-* O(1) field access.
+* O(1) field access, O(n) construction.
 
 ## TODOs
 
