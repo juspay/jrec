@@ -1,4 +1,4 @@
-# rec — anonymous records for busy people
+# jrec — anonymous records for busy people
 
 Based on [superrecord](https://hackage.haskell.org/package/superrecord), but simplified. No automatic field reordering. No GHCJS bits inside. Easier to hack on.
 
