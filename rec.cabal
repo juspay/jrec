@@ -25,22 +25,32 @@ library
     Record.Tuple
 
   default-extensions:
+    BlockArguments
     DataKinds
+    DeriveGeneric
+    DerivingStrategies
+    DuplicateRecordFields
     FlexibleContexts
     FlexibleInstances
     FunctionalDependencies
     GADTs
+    InstanceSigs
     KindSignatures
+    LambdaCase
     MultiParamTypeClasses
     OverloadedLabels
     OverloadedStrings
+    PatternSynonyms
     RankNTypes
     ScopedTypeVariables
     StandaloneDeriving
+    TupleSections
     TypeFamilies
     TypeOperators
     UndecidableInstances
+    UnicodeSyntax
     ViewPatterns
+    ConstraintKinds
 
   build-depends:
       aeson

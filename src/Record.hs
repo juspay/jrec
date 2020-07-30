@@ -32,6 +32,7 @@ import qualified Record.Super as R
 import Control.Lens ((&), (^.))
 import Record.Super ((:=))
 import Record.Tuple
+import Record.Field
 import Test.Tasty.HUnit
 import Unsafe.Coerce
 
