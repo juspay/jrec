@@ -29,12 +29,11 @@ import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
 import qualified Record.Super as R
+import Control.Lens ((&), (^.))
 import Record.Super ((:=))
 import Record.Tuple
-import ShimPrelude
 import Test.Tasty.HUnit
 import Unsafe.Coerce
-import qualified Prelude
 
 ----------------------------------------------------------------------------
 -- Type
