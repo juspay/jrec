@@ -23,7 +23,7 @@
 -- export a lot of good things, and it was easier to just copy the
 -- implementation since we don't need much out of it.
 
-module Record.Super where
+module Rec.Super where
 
 import Control.DeepSeq
 import Control.Monad.Reader

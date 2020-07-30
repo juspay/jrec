@@ -1,7 +1,8 @@
--- Generated with cabal run -v0 bin/genrecord > src/Record/Tuple.hs
-module Record.Tuple where
+-- Generated with cabal run -v0 bin/genrecord > src/Rec/Tuple.hs
+-- TODO: Import this script, and make it generate 'Rec' instead of 'Record'
+module Rec.Tuple where
 import Prelude
-import qualified Record.Super as R
+import qualified Rec.Super as R
 import Unsafe.Coerce
 class RecTuple tuple fields | tuple -> fields, fields -> tuple where
   fromTuple :: tuple -> R.Rec fields

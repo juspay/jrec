@@ -20,9 +20,9 @@ extra-source-files:
 library
   hs-source-dirs:     src
   exposed-modules:
-    Record
-    Record.Super
-    Record.Tuple
+    Rec
+    Rec.Super
+    Rec.Tuple
 
   default-extensions:
     BlockArguments

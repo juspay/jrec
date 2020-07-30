@@ -2,7 +2,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Record
+module Rec
   ( Record,
     pattern Record,
     (:=:),
@@ -28,11 +28,11 @@ import GHC.Generics
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
-import qualified Record.Super as R
+import qualified Rec.Super as R
 import Control.Lens ((&), (^.))
-import Record.Super ((:=))
-import Record.Tuple
-import Record.Field
+import Rec.Super ((:=))
+import Rec.Tuple
+import Rec.Field
 import Test.Tasty.HUnit
 import Unsafe.Coerce
 
@@ -96,7 +96,7 @@ type family Sels fields where
 
 type RecordRep fields =
   D1
-    ('MetaData "Record" "Record" "" 'False)
+    ('MetaData "Record" "Rec" "" 'False)
     ( C1
         ('MetaCons "Record" 'PrefixI 'True)
         (Sels fields)

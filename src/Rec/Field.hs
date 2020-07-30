@@ -1,4 +1,4 @@
-module Record.Field where
+module Rec.Field where
 
 import qualified Data.Generics.Labels as GL
 import qualified Data.Generics.Product.Fields as GL
