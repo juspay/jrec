@@ -8,11 +8,11 @@ module JRec
     pattern ExactRecord,
     unField,
     union,
-    (:=)(..),
+    (:=) (..),
   )
 where
 
-import Control.Lens ((.~), coerced)
+import Control.Lens ((&), (.~), (^.), coerced)
 import qualified Data.Generics.Product.Fields as GL
 import qualified Data.Generics.Wrapped as GL
 import Data.Proxy
@@ -21,11 +21,10 @@ import GHC.Generics
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
-import qualified JRec.Super as R
-import Control.Lens ((&), (^.))
-import JRec.Super ((:=)(..))
-import JRec.Tuple
 import JRec.Field
+import qualified JRec.Super as R
+import JRec.Super ((:=) (..))
+import JRec.Tuple
 import Unsafe.Coerce
 
 ----------------------------------------------------------------------------
