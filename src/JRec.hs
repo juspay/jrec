@@ -5,11 +5,10 @@
 module JRec
   ( Record,
     pattern Record,
-    (:=:),
-    pattern (:=:),
     pattern ExactRecord,
     unField,
     union,
+    (:=)(..),
   )
 where
 
@@ -24,7 +23,7 @@ import GHC.TypeLits
 import Generic.Data
 import qualified JRec.Super as R
 import Control.Lens ((&), (^.))
-import JRec.Super ((:=))
+import JRec.Super ((:=)(..))
 import JRec.Tuple
 import JRec.Field
 import Unsafe.Coerce
@@ -49,14 +48,6 @@ instance
 
 unField :: field ~ field' => R.FldProxy field -> (field' R.:= value) -> value
 unField _ (_ R.:= value) = value
-
-----------------------------------------------------------------------------
--- Aliases
-----------------------------------------------------------------------------
-
-type a :=: b = a := b
-
-pattern a :=: b = a R.:= b
 
 ----------------------------------------------------------------------------
 -- Other operations
