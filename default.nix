@@ -5,9 +5,19 @@ let
     url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
     sha256 = nixpkgsSha;
   }) {};
+  gitignoreSrc = pkgs.fetchFromGitHub { 
+    owner = "hercules-ci";
+    repo = "gitignore";
+    # put the latest commit sha of gitignore Nix library here:
+    rev = "c4662e6";
+    # use what nix suggests in the mismatch message here:
+    sha256 = "sha256:1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
+  };
+  inherit (import gitignoreSrc { inherit (pkgs); }) gitignoreSource;
 in 
   pkgs.haskellPackages.developPackage {
-    root = ./.;
+    root = gitignoreSource ./.;
+    name = "jrec";
     modifier = drv:
       pkgs.haskell.lib.addBuildTools drv (with pkgs.haskellPackages;
         [ cabal-install
