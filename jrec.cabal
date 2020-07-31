@@ -20,9 +20,9 @@ extra-source-files:
 library
   hs-source-dirs:     src
   exposed-modules:
-    Rec
-    Rec.Super
-    Rec.Tuple
+    JRec
+    JRec.Super
+    JRec.Tuple
 
   default-extensions:
     BlockArguments

@@ -2,7 +2,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Rec
+module JRec
   ( Record,
     pattern Record,
     (:=:),
@@ -28,11 +28,11 @@ import GHC.Generics
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
-import qualified Rec.Super as R
+import qualified JRec.Super as R
 import Control.Lens ((&), (^.))
-import Rec.Super ((:=))
-import Rec.Tuple
-import Rec.Field
+import JRec.Super ((:=))
+import JRec.Tuple
+import JRec.Field
 import Test.Tasty.HUnit
 import Unsafe.Coerce
 

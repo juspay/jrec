@@ -1,4 +1,4 @@
-module Rec.Field where
+module JRec.Field where
 
 import qualified Data.Generics.Labels as GL
 import qualified Data.Generics.Product.Fields as GL
