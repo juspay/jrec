@@ -3,13 +3,10 @@
 {-# LANGUAGE TypeApplications #-}
 
 module JRec
-  ( -- Record,
-    -- pattern Record,
-    -- pattern ExactRecord,
-    unField,
+  ( unField,
     union,
     (:=) (..),
-    Rec(..),
+    Rec,
     pattern Rec,
   )
 where
@@ -25,7 +22,7 @@ import GHC.TypeLits
 import Generic.Data
 import JRec.Field
 import qualified JRec.Super as R
-import JRec.Super ((:=) (..), Rec(..))
+import JRec.Super ((:=) (..), Rec)
 import JRec.Tuple
 import Unsafe.Coerce
 
