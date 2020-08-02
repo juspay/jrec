@@ -40,6 +40,8 @@ import GHC.OverloadedLabels
 import GHC.Prim
 import GHC.ST (ST (..), runST)
 import GHC.TypeLits
+import Generic.Data (gshowsPrec)
+import Generic.Data.Internal.Show (GShow)
 import Unsafe.Coerce
 import Prelude
 
@@ -80,14 +82,18 @@ instance l ~ l' => IsLabel (l :: Symbol) (FldProxy l') where
 -- | Internal record type. When manually writing an explicit type signature for
 -- a record, use 'Record' instead. For abstract type signatures 'Rec' will work
 -- well.
-data Rec (lts :: [*]) = Rec
+data Rec (lts :: [*]) = MkRec
   { _unRec :: SmallArray# Any -- Note that the values are physically in reverse order
   }
 
 type role Rec representational
 
-instance (RecApply lts lts Show) => Show (Rec lts) where
-  show = show . showRec
+instance 
+  ( RecApply lts lts Show, 
+    GShow Proxy (Rep (Rec lts)),
+    Generic (Rec lts)
+  ) => Show (Rec lts) where
+  show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
 
 instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
@@ -123,12 +129,12 @@ unsafeRNil (I# n#) =
     case newSmallArray# n# (error "No Value") s# of
       (# s'#, arr# #) ->
         case unsafeFreezeSmallArray# arr# s'# of
-          (# s''#, a# #) -> (# s''#, Rec a# #)
+          (# s''#, a# #) -> (# s''#, MkRec a# #)
 {-# INLINE unsafeRNil #-}
 
 -- Not in superrecord
 recCopy :: forall lts rts. RecCopy lts lts rts => Rec lts -> Rec rts
-recCopy r@(Rec vec#) =
+recCopy r@(MkRec vec#) =
   let size# = sizeofSmallArray# vec#
    in runST' $ ST $ \s# ->
         case newSmallArray# size# (error "No value") s# of
@@ -136,7 +142,7 @@ recCopy r@(Rec vec#) =
             case recCopyInto (Proxy @lts) r (Proxy @rts) arr# s'# of
               s''# ->
                 case unsafeFreezeSmallArray# arr# s''# of
-                  (# s'''#, a# #) -> (# s'''#, Rec a# #)
+                  (# s'''#, a# #) -> (# s'''#, MkRec a# #)
 {-# INLINE recCopy #-}
 
 class RecCopy (pts :: [*]) (lts :: [*]) (rts :: [*]) where
@@ -185,14 +191,14 @@ unsafeRCons ::
   l := t ->
   Rec lts ->
   Rec (l := t ': lts)
-unsafeRCons (_ := val) (Rec vec#) =
+unsafeRCons (_ := val) (MkRec vec#) =
   runST' $ ST $ \s# ->
     case unsafeThawSmallArray# vec# s# of
       (# s'#, arr# #) ->
         case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
           s''# ->
             case unsafeFreezeSmallArray# arr# s''# of
-              (# s'''#, a# #) -> (# s'''#, Rec a# #)
+              (# s'''#, a# #) -> (# s'''#, MkRec a# #)
   where
     !(I# size#) = fromIntegral $ natVal' (proxy# :: Proxy# s)
 {-# INLINE unsafeRCons #-}
@@ -262,7 +268,7 @@ get ::
   FldProxy l ->
   Rec lts ->
   v
-get _ (Rec vec#) =
+get _ (MkRec vec#) =
   let !(I# index#) =
         fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts)))
       size# = sizeofSmallArray# vec#
@@ -292,7 +298,7 @@ set ::
   v' ->
   Rec lts ->
   Rec lts'
-set _ !val (Rec vec#) =
+set _ !val (MkRec vec#) =
   let !(I# index#) = fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts)))
       -- Unlike superrecord - calculating size dynamically instead of statically
       size# = sizeofSmallArray# vec#
@@ -307,7 +313,7 @@ set _ !val (Rec vec#) =
                   case writeSmallArray# arr# (size# -# index# -# 1#) dynVal s''# of
                     s'''# ->
                       case unsafeFreezeSmallArray# arr# s'''# of
-                        (# s''''#, a# #) -> (# s''''#, Rec a# #)
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
    in r2
 {-# INLINE set #-}
 
@@ -379,7 +385,7 @@ combine lts rts =
                 case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s''# of
                   s'''# ->
                     case unsafeFreezeSmallArray# arr# s'''# of
-                      (# s''''#, a# #) -> (# s''''#, Rec a# #)
+                      (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
 
 -- | Alias for 'combine'
