@@ -3,12 +3,14 @@
 {-# LANGUAGE TypeApplications #-}
 
 module JRec
-  ( Record,
-    pattern Record,
-    pattern ExactRecord,
+  ( -- Record,
+    -- pattern Record,
+    -- pattern ExactRecord,
     unField,
     union,
     (:=) (..),
+    Rec(..),
+    pattern Rec,
   )
 where
 
@@ -23,23 +25,9 @@ import GHC.TypeLits
 import Generic.Data
 import JRec.Field
 import qualified JRec.Super as R
-import JRec.Super ((:=) (..))
+import JRec.Super ((:=) (..), Rec(..))
 import JRec.Tuple
 import Unsafe.Coerce
-
-----------------------------------------------------------------------------
--- Type
-----------------------------------------------------------------------------
-
-newtype Record fields = MkRecord (R.Rec fields)
-
-deriving instance R.RecEq fields fields => Eq (Record fields)
-
-instance
-  (Generic (Record fields), GShow0 (Rep (Record fields))) =>
-  Show (Record fields)
-  where
-  show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
 
 ----------------------------------------------------------------------------
 -- unField
@@ -61,10 +49,10 @@ union ::
     R.RecCopy lhs lhs res,
     R.RecCopy rhs rhs res
   ) =>
-  Record lhs ->
-  Record rhs ->
-  Record res
-union (MkRecord a) (MkRecord b) = MkRecord (R.combine a b)
+  Rec lhs ->
+  Rec rhs ->
+  Rec res
+union = R.combine
 
 ----------------------------------------------------------------------------
 -- Generic
@@ -87,38 +75,32 @@ type RecordRep fields =
 
 instance
   (R.FromNative (RecordRep fields) fields, R.ToNative (RecordRep fields) fields) =>
-  Generic (Record fields)
+  Generic (Rec fields)
   where
   type
-    Rep (Record fields) =
+    Rep (Rec fields) =
       RecordRep fields
-  from (MkRecord r) = R.toNative' r
-  to rep = MkRecord (R.fromNative' rep)
+  from r = R.toNative' r
+  to rep = R.fromNative' rep
 
 ----------------------------------------------------------------------------
 -- generic-lens
 ----------------------------------------------------------------------------
 
-instance {-# OVERLAPPING #-} (R.Set field fields a' ~ fields', R.Set field fields' a ~ fields, R.Has field fields a, R.Has field fields' a') => GL.HasField field (Record fields) (Record fields') a a' where
-  field = coerced @(Record fields) @_ @(R.Rec fields) @_ . R.lens (R.FldProxy @field)
+instance {-# OVERLAPPING #-} (R.Set field fields a' ~ fields', R.Set field fields' a ~ fields, R.Has field fields a, R.Has field fields' a') => GL.HasField field (Rec fields) (Rec fields') a a' where
+  field = R.lens (R.FldProxy @field)
 
-instance {-# OVERLAPPING #-} (R.Set field fields a ~ fields, R.Has field fields a) => GL.HasField' field (Record fields) a where
-  field' = coerced @(Record fields) @_ @(R.Rec fields) @_ . R.lens (R.FldProxy @field)
+instance {-# OVERLAPPING #-} (R.Set field fields a ~ fields, R.Has field fields a) => GL.HasField' field (Rec fields) a where
+  field' = R.lens (R.FldProxy @field)
 
-pattern ExactRecord :: RecTuple tuple fields => tuple -> Record fields
-pattern ExactRecord a <-
-  MkRecord (toTuple -> a)
-  where
-    ExactRecord = MkRecord . fromTuple
-
-pattern Record ::
-  ( RecTuple tuple fields,
-    R.RecCopy fields fields fields',
-    R.RecCopy fields' fields' fields
+pattern Rec ::
+  ( RecTuple tuple fields
   ) =>
   tuple ->
-  Record fields'
-pattern Record a <-
-  MkRecord (toTuple . R.recCopy -> a)
+  Rec fields
+pattern Rec a <-
+  (toTuple -> a)
   where
-    Record = MkRecord . R.recCopy . fromTuple
+    Rec = fromTuple
+
+
