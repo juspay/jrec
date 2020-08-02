@@ -42,6 +42,7 @@ import GHC.ST (ST (..), runST)
 import GHC.TypeLits
 import Generic.Data (gshowsPrec)
 import Generic.Data.Internal.Show (GShow)
+import qualified Optics.Lens as OL
 import Unsafe.Coerce
 import Prelude
 
@@ -659,6 +660,12 @@ lens ::
 lens lbl f r =
   fmap (\v -> set lbl v r) (f (get lbl r))
 {-# INLINE lens #-}
+
+opticLens :: 
+  (Has l lts v, Set l lts v' ~ lts') => FldProxy l -> OL.Lens (Rec lts) (Rec lts') v v' 
+opticLens lbl =
+  OL.lensVL $ lens lbl
+{-# INLINE opticLens #-}
 
 class NoConstraint x
 

@@ -12,8 +12,10 @@ module JRec
 where
 
 import Control.Lens ((&), (.~), (^.), coerced)
-import qualified Data.Generics.Product.Fields as GL
-import qualified Data.Generics.Wrapped as GL
+import qualified "generic-lens" Data.Generics.Product.Fields as GL
+import qualified "generic-lens" Data.Generics.Wrapped as GL
+import qualified "generic-optics" Data.Generics.Product.Fields as GO
+import qualified "generic-optics" Data.Generics.Wrapped as GO
 import Data.Proxy
 import GHC.Exts (Any)
 import GHC.Generics
@@ -89,6 +91,17 @@ instance {-# OVERLAPPING #-} (R.Set field fields a' ~ fields', R.Set field field
 
 instance {-# OVERLAPPING #-} (R.Set field fields a ~ fields, R.Has field fields a) => GL.HasField' field (Rec fields) a where
   field' = R.lens (R.FldProxy @field)
+
+----------------------------------------------------------------------------
+-- generic-optics
+----------------------------------------------------------------------------
+
+instance {-# OVERLAPPING #-} (R.Set field fields a' ~ fields', R.Set field fields' a ~ fields, R.Has field fields a, R.Has field fields' a') => GO.HasField field (Rec fields) (Rec fields') a a' where
+  field = R.opticLens (R.FldProxy @field)
+
+instance {-# OVERLAPPING #-} (R.Set field fields a ~ fields, R.Has field fields a) => GO.HasField' field (Rec fields) a where
+  field' = R.opticLens (R.FldProxy @field)
+
 
 pattern Rec ::
   ( RecTuple tuple fields

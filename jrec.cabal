@@ -51,6 +51,7 @@ library
     UnicodeSyntax
     ViewPatterns
     ConstraintKinds
+    PackageImports
 
   build-depends:
       aeson
@@ -59,7 +60,9 @@ library
     , deepseq
     , generic-data
     , generic-lens
+    , generic-optics
     , ghc-prim
+    , optics-core
     , lens
     , mtl
     , text
