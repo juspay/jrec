@@ -12,11 +12,11 @@ Based on [superrecord](https://hackage.haskell.org/package/superrecord), but sim
 
 * Provides `Generic` instances out of the box. Aeson, etc can't believe these aren't normal records! Anything `Generic`-derived just works.
 
-* Provides `generic-lens` instances out of the box. Due to those custom instances, we support polymorphic updates.
+* Provides `generic-lens` and `generic-optics` instances out of the box. Due to those custom instances, we support polymorphic updates.
 
 * O(1) field access, O(n) construction.
 
-* PureScript-style partial records — if you have a `Record ("foo" := Int ': rest)`, `HasField "foo"` will work just fine.
+* PureScript-style partial records — if you have a `Rec ("foo" := Int ': rest)`, `HasField "foo"` will work just fine.
 
 ## TODOs
 
@@ -24,3 +24,7 @@ Based on [superrecord](https://hackage.haskell.org/package/superrecord), but sim
 * Expose all internals.
 * `-- NOTE: doesn't use 'KeyDoesNotExist'` — fix this.
 * `RemoveAccessTo` — can we get rid of it?
+
+## Acknowledgement
+
+* The `Rec.Super` module is entirely based on the code from [superrecord](https://hackage.haskell.org/package/superrecord).
