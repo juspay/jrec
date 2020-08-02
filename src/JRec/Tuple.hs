@@ -1,5 +1,5 @@
--- Generated with cabal run -v0 bin/genrecord > src/Rec/Tuple.hs
--- TODO: Import this script, and make it generate 'Rec' instead of 'Record'
+-- Generated with cabal run -v0 bin/genrecord > src/JRec/Tuple.hs
+-- TODO: Import this script, and make it generate 'JRec' instead of 'Record'
 module JRec.Tuple where
 import Prelude
 import qualified JRec.Super as R
