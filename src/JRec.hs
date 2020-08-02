@@ -99,5 +99,3 @@ pattern Rec a <-
   (toTuple -> a)
   where
     Rec = fromTuple
-
-

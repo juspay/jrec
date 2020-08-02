@@ -40,6 +40,8 @@ import GHC.OverloadedLabels
 import GHC.Prim
 import GHC.ST (ST (..), runST)
 import GHC.TypeLits
+import Generic.Data (gshowsPrec)
+import Generic.Data.Internal.Show (GShow)
 import Unsafe.Coerce
 import Prelude
 
@@ -86,8 +88,12 @@ data Rec (lts :: [*]) = MkRec
 
 type role Rec representational
 
-instance (RecApply lts lts Show) => Show (Rec lts) where
-  show = show . showRec
+instance 
+  ( RecApply lts lts Show, 
+    GShow Proxy (Rep (Rec lts)),
+    Generic (Rec lts)
+  ) => Show (Rec lts) where
+  show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
 
 instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)

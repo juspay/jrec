@@ -10,9 +10,9 @@ spec = do
     (Rec (#u := True, #a := 5, #b := 6) & #u .~ 5)
       `shouldBe` Rec (#u := 5, #a := 5, #b := 6)
   it "show" $ do
+    show (Rec ()) `shouldBe` "{}"
     show (Rec (#foo := True)) `shouldBe` "{foo = True}"
     show (Rec (#foo := True, #bar := 0)) `shouldBe` "{foo = True, bar = 0}"
-    show (Rec ()) `shouldBe` "{}"
   it "get" $ do
     let getA1 :: Rec ("a" := Int ': rest) -> Int
         getA1 = (^. #a)
