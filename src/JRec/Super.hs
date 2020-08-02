@@ -89,11 +89,13 @@ data Rec (lts :: [*]) = MkRec
 
 type role Rec representational
 
-instance 
-  ( RecApply lts lts Show, 
+instance
+  ( RecApply lts lts Show,
     GShow Proxy (Rep (Rec lts)),
     Generic (Rec lts)
-  ) => Show (Rec lts) where
+  ) =>
+  Show (Rec lts)
+  where
   show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
 
 instance RecEq lts lts => Eq (Rec lts) where
@@ -661,8 +663,8 @@ lens lbl f r =
   fmap (\v -> set lbl v r) (f (get lbl r))
 {-# INLINE lens #-}
 
-opticLens :: 
-  (Has l lts v, Set l lts v' ~ lts') => FldProxy l -> OL.Lens (Rec lts) (Rec lts') v v' 
+opticLens ::
+  (Has l lts v, Set l lts v' ~ lts') => FldProxy l -> OL.Lens (Rec lts) (Rec lts') v v'
 opticLens lbl =
   OL.lensVL $ lens lbl
 {-# INLINE opticLens #-}

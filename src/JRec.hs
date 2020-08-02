@@ -13,8 +13,8 @@ where
 
 import Control.Lens ((&), (.~), (^.), coerced)
 import qualified "generic-lens" Data.Generics.Product.Fields as GL
-import qualified "generic-lens" Data.Generics.Wrapped as GL
 import qualified "generic-optics" Data.Generics.Product.Fields as GO
+import qualified "generic-lens" Data.Generics.Wrapped as GL
 import qualified "generic-optics" Data.Generics.Wrapped as GO
 import Data.Proxy
 import GHC.Exts (Any)
@@ -101,7 +101,6 @@ instance {-# OVERLAPPING #-} (R.Set field fields a' ~ fields', R.Set field field
 
 instance {-# OVERLAPPING #-} (R.Set field fields a ~ fields, R.Has field fields a) => GO.HasField' field (Rec fields) a where
   field' = R.opticLens (R.FldProxy @field)
-
 
 pattern Rec ::
   ( RecTuple tuple fields
