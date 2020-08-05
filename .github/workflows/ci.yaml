@@ -7,8 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix: 
-        # default = nixpkgs default
-        ghc: ['default', 'ghc8101']
+        ghc: ['ghc884', 'ghc8101']
         os: [ubuntu-latest]
     name: GHC ${{ matrix.ghc }}
     steps:
