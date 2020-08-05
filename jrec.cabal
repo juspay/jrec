@@ -24,6 +24,7 @@ library
   other-modules:
     JRec.Super
     JRec.Tuple
+    JRec.Field
 
   default-extensions:
     BlockArguments
