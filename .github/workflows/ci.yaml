@@ -9,9 +9,9 @@ jobs:
       matrix: 
         ghc: ['default', 'ghc8101']
         os: [ubuntu-latest]
-    name: GHC $${{ matrix.ghc }}
+    name: GHC ${{ matrix.ghc }}
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
-    - name: Build 🔧
-      run: nix-build -j4
+    - name: Build and test 🔧
+      run: nix-build -j4 --argstr compiler ${{ matrix.ghc }}

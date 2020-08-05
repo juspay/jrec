@@ -1,3 +1,4 @@
+{ compiler ? "default" }:
 let 
   nixpkgsSrc = builtins.fetchTarball {
     url = "https://github.com/nixos/nixpkgs/archive/76f2e271a2ef.tar.gz";
