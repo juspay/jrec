@@ -128,24 +128,26 @@ rnil = unsafeRNil 0
 -- | An empty record with an initial size for the record
 unsafeRNil :: Int -> Rec '[]
 unsafeRNil (I# n#) =
-  runST' $ ST $ \s# ->
-    case newSmallArray# n# (error "No Value") s# of
-      (# s'#, arr# #) ->
-        case unsafeFreezeSmallArray# arr# s'# of
-          (# s''#, a# #) -> (# s''#, MkRec a# #)
+  runST' $
+    ST $ \s# ->
+      case newSmallArray# n# (error "No Value") s# of
+        (# s'#, arr# #) ->
+          case unsafeFreezeSmallArray# arr# s'# of
+            (# s''#, a# #) -> (# s''#, MkRec a# #)
 {-# INLINE unsafeRNil #-}
 
 -- Not in superrecord
 recCopy :: forall lts rts. RecCopy lts lts rts => Rec lts -> Rec rts
 recCopy r@(MkRec vec#) =
   let size# = sizeofSmallArray# vec#
-   in runST' $ ST $ \s# ->
-        case newSmallArray# size# (error "No value") s# of
-          (# s'#, arr# #) ->
-            case recCopyInto (Proxy @lts) r (Proxy @rts) arr# s'# of
-              s''# ->
-                case unsafeFreezeSmallArray# arr# s''# of
-                  (# s'''#, a# #) -> (# s'''#, MkRec a# #)
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# size# (error "No value") s# of
+            (# s'#, arr# #) ->
+              case recCopyInto (Proxy @lts) r (Proxy @rts) arr# s'# of
+                s''# ->
+                  case unsafeFreezeSmallArray# arr# s''# of
+                    (# s'''#, a# #) -> (# s'''#, MkRec a# #)
 {-# INLINE recCopy #-}
 
 class RecCopy (pts :: [*]) (lts :: [*]) (rts :: [*]) where
@@ -195,13 +197,14 @@ unsafeRCons ::
   Rec lts ->
   Rec (l := t ': lts)
 unsafeRCons (_ := val) (MkRec vec#) =
-  runST' $ ST $ \s# ->
-    case unsafeThawSmallArray# vec# s# of
-      (# s'#, arr# #) ->
-        case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
-          s''# ->
-            case unsafeFreezeSmallArray# arr# s''# of
-              (# s'''#, a# #) -> (# s'''#, MkRec a# #)
+  runST' $
+    ST $ \s# ->
+      case unsafeThawSmallArray# vec# s# of
+        (# s'#, arr# #) ->
+          case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
+            s''# ->
+              case unsafeFreezeSmallArray# arr# s''# of
+                (# s'''#, a# #) -> (# s'''#, MkRec a# #)
   where
     !(I# size#) = fromIntegral $ natVal' (proxy# :: Proxy# s)
 {-# INLINE unsafeRCons #-}
@@ -308,15 +311,16 @@ set _ !val (MkRec vec#) =
       dynVal :: Any
       !dynVal = unsafeCoerce# val
       r2 =
-        runST' $ ST $ \s# ->
-          case newSmallArray# size# (error "No value") s# of
-            (# s'#, arr# #) ->
-              case copySmallArray# vec# 0# arr# 0# size# s'# of
-                s''# ->
-                  case writeSmallArray# arr# (size# -# index# -# 1#) dynVal s''# of
-                    s'''# ->
-                      case unsafeFreezeSmallArray# arr# s'''# of
-                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+        runST' $
+          ST $ \s# ->
+            case newSmallArray# size# (error "No value") s# of
+              (# s'#, arr# #) ->
+                case copySmallArray# vec# 0# arr# 0# size# s'# of
+                  s''# ->
+                    case writeSmallArray# arr# (size# -# index# -# 1#) dynVal s''# of
+                      s'''# ->
+                        case unsafeFreezeSmallArray# arr# s'''# of
+                          (# s''''#, a# #) -> (# s''''#, MkRec a# #)
    in r2
 {-# INLINE set #-}
 
@@ -380,15 +384,16 @@ combine ::
 combine lts rts =
   let !(I# size#) =
         fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs + RecSize rhs))
-   in runST' $ ST $ \s# ->
-        case newSmallArray# size# (error "No value") s# of
-          (# s'#, arr# #) ->
-            case recCopyInto (Proxy :: Proxy lhs) lts (Proxy :: Proxy res) arr# s'# of
-              s''# ->
-                case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s''# of
-                  s'''# ->
-                    case unsafeFreezeSmallArray# arr# s'''# of
-                      (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# size# (error "No value") s# of
+            (# s'#, arr# #) ->
+              case recCopyInto (Proxy :: Proxy lhs) lts (Proxy :: Proxy res) arr# s'# of
+                s''# ->
+                  case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s''# of
+                    s'''# ->
+                      case unsafeFreezeSmallArray# arr# s'''# of
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
 
 -- | Alias for 'combine'

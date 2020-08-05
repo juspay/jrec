@@ -11,7 +11,7 @@ module JRec
   )
 where
 
-import Control.Lens ((&), (.~), (^.), coerced)
+import Control.Lens (coerced, (&), (.~), (^.))
 import qualified "generic-lens" Data.Generics.Product.Fields as GL
 import qualified "generic-optics" Data.Generics.Product.Fields as GO
 import qualified "generic-lens" Data.Generics.Wrapped as GL
@@ -23,8 +23,8 @@ import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
 import JRec.Field
+import JRec.Super (Rec, (:=) (..))
 import qualified JRec.Super as R
-import JRec.Super ((:=) (..), Rec)
 import JRec.Tuple
 import Unsafe.Coerce
 
