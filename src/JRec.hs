@@ -4,10 +4,11 @@
 
 module JRec
   ( unField,
-    union,
     (:=) (..),
     Rec,
     pattern Rec,
+    append,
+    union,
   )
 where
 
@@ -39,7 +40,24 @@ unField _ (_ R.:= value) = value
 -- Other operations
 ----------------------------------------------------------------------------
 
--- Append records
+-- Appends records, without removing duplicates.
+--
+-- Left-biased. Does not sort.
+append ::
+  forall lhs rhs res.
+  ( KnownNat (R.RecSize lhs),
+    KnownNat (R.RecSize rhs),
+    KnownNat (R.RecSize lhs + R.RecSize rhs),
+    res ~ R.RecAppend lhs rhs,
+    R.RecCopy lhs lhs res,
+    R.RecCopy rhs rhs res
+  ) =>
+  Rec lhs ->
+  Rec rhs ->
+  Rec res
+append = R.combine
+
+-- Merges records, removing duplicates (TODO)
 --
 -- Left-biased. Does not sort.
 --
