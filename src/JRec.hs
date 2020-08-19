@@ -39,6 +39,11 @@ unField _ (_ R.:= value) = value
 -- Other operations
 ----------------------------------------------------------------------------
 
+-- Append records
+--
+-- Left-biased. Does not sort.
+--
+-- FIXME: This doesn't remove duplicates?
 union ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),

@@ -39,3 +39,13 @@ spec = do
       `shouldBe` (Rec (#u := True, #a := 8))
     setA2 (Rec (#u := True, #a := 5, #b := 6))
       `shouldBe` (Rec (#u := True, #a := 8, #b := 6))
+  describe "union" $ do
+    it "simple union" $ do
+      Rec (#a := 1) `union` Rec (#b := 2)
+        `shouldBe` Rec (#a := 1, #b := 2)
+    it "union with duplicates (not implemented)" $ do
+      -- TODO: Actually remove duplicates
+      let r1 = Rec (#b := 5, #a := 6)
+          r2 = Rec (#c := 7, #a := 8)
+      r1 `union` r2
+        `shouldBe` Rec (#b := 5, #a := 8, #c := 7, #a := 8)
