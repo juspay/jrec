@@ -18,6 +18,16 @@ Based on [superrecord](https://hackage.haskell.org/package/superrecord), but sim
 
 * PureScript-style partial records — if you have a `Rec ("foo" := Int ': rest)`, `HasField "foo"` will work just fine.
 
+## Developing
+
+IDE support is available inside `nix-shell`. For example, if you use VS Code, you may launch it as:
+
+```bash
+nix-shell --run "code ."
+```
+
+Run tests inside ghcid using `bin/test`.
+
 ## TODOs
 
 * Documentation.
