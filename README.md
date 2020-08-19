@@ -37,4 +37,4 @@ Run tests inside ghcid using `bin/test`.
 
 ## Acknowledgement
 
-* The `Rec.Super` module is entirely based on the code from [superrecord](https://hackage.haskell.org/package/superrecord).
+* The `JRec.Internal` module is entirely based on the code from [superrecord](https://hackage.haskell.org/package/superrecord).

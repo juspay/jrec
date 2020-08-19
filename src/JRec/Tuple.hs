@@ -2,7 +2,7 @@
 -- TODO: Import this script, and make it generate 'JRec' instead of 'Record'
 module JRec.Tuple where
 import Prelude
-import qualified JRec.Super as R
+import qualified JRec.Internal as R
 import Unsafe.Coerce
 class RecTuple tuple fields | tuple -> fields, fields -> tuple where
   fromTuple :: tuple -> R.Rec fields

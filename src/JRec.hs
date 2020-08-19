@@ -24,8 +24,8 @@ import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
 import JRec.Field
-import JRec.Super (Rec, (:=) (..))
-import qualified JRec.Super as R
+import JRec.Internal (Rec, (:=) (..))
+import qualified JRec.Internal as R
 import JRec.Tuple
 import Unsafe.Coerce
 
