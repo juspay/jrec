@@ -26,7 +26,9 @@ IDE support is available inside `nix-shell`. For example, if you use VS Code, yo
 nix-shell --run "code ."
 ```
 
-Run tests inside ghcid using `bin/test`.
+### Tests
+
+Run `bin/test` for fast-reloading tests. When library sources change, the test script will reload instantly and re-run the tests.
 
 ## TODOs
 

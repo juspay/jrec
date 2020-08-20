@@ -1,11 +1,11 @@
-cabal-version:      >=1.10
+cabal-version:      2.4
 name:               jrec
 version:            0.1.0.0
 synopsis:           anonymous records for busy people
 
 -- description:
--- bug-reports:
-license:            BSD3
+bug-reports:        https://github.com/juspay/jrec/issues
+license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Artyom Kazak
 maintainer:         artyom.kazak@juspay.in
@@ -17,15 +17,23 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
-library
-  hs-source-dirs:     src
-  exposed-modules:
-    JRec
-    JRec.Internal
-  other-modules:
-    JRec.Tuple
-    JRec.Field
-
+-- A common stanza to share with tests, so that ghcid (bin/test) will reload
+-- instantly when the library sources change (without us having to restart it).
+common library-common 
+  default-language:   Haskell2010
+  build-depends:
+      aeson
+    , base          >=4.13 && <4.15
+    , constraints
+    , deepseq
+    , generic-data
+    , generic-lens
+    , generic-optics
+    , ghc-prim
+    , optics-core
+    , lens
+    , mtl
+    , text
   default-extensions:
     BlockArguments
     DataKinds
@@ -55,59 +63,23 @@ library
     ConstraintKinds
     PackageImports
 
-  build-depends:
-      aeson
-    , base          >=4.13 && <4.15
-    , constraints
-    , deepseq
-    , generic-data
-    , generic-lens
-    , generic-optics
-    , ghc-prim
-    , optics-core
-    , lens
-    , mtl
-    , text
-
-  default-language:   Haskell2010
+library
+  import: library-common
+  hs-source-dirs:     src
+  exposed-modules:
+    JRec
+    JRec.Internal
+  other-modules:
+    JRec.Tuple
+    JRec.Field
 
 test-suite jrec-test
+  import: library-common
   type: exitcode-stdio-1.0
-  hs-source-dirs: test
+  hs-source-dirs: test, src
   main-is: Spec.hs 
   build-depends:
     base,
     hspec,
     QuickCheck,
-    lens,
-    jrec
-  default-language: Haskell2010
-  default-extensions:
-    BlockArguments
-    DataKinds
-    DeriveGeneric
-    DerivingStrategies
-    DuplicateRecordFields
-    FlexibleContexts
-    FlexibleInstances
-    FunctionalDependencies
-    GADTs
-    InstanceSigs
-    KindSignatures
-    LambdaCase
-    MultiParamTypeClasses
-    OverloadedLabels
-    OverloadedStrings
-    PatternSynonyms
-    RankNTypes
-    ScopedTypeVariables
-    StandaloneDeriving
-    TupleSections
-    TypeFamilies
-    TypeOperators
-    UndecidableInstances
-    UnicodeSyntax
-    ViewPatterns
-    ConstraintKinds
-
-
+    lens
