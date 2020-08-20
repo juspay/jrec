@@ -21,7 +21,6 @@ library
   hs-source-dirs:     src
   exposed-modules:
     JRec
-  other-modules:
     JRec.Super
     JRec.Tuple
     JRec.Field

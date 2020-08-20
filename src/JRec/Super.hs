@@ -30,6 +30,7 @@ import Control.Monad.Reader
 import qualified Control.Monad.State as S
 import Data.Aeson
 import Data.Aeson.Types (Parser)
+import qualified Data.Char as Char
 import Data.Constraint
 import Data.Proxy
 import qualified Data.Text as T
@@ -469,15 +470,30 @@ reflectRecFold _ f r =
   recApply (\(Dict :: Dict (c a)) s v x -> f s v x) r (Proxy :: Proxy lts)
 {-# INLINE reflectRecFold #-}
 
+-- | Unmangle field names
+--
+-- This must be in sync with nau/Nau.Utils.EncodeField
+decodeField :: T.Text -> T.Text
+decodeField s =
+  if "____" `T.isPrefixOf` s
+    then T.pack (go (Prelude.drop 4 (T.unpack s)))
+    else s
+  where
+    go ('_' : xs) =
+      Prelude.toEnum (Prelude.read (Prelude.takeWhile Char.isDigit xs)) :
+      go (Prelude.drop 1 (Prelude.dropWhile Char.isDigit xs))
+    go (c : xs) = c : go xs
+    go [] = []
+
 -- | Convert all elements of a record to a 'String'
 showRec :: forall lts. (RecApply lts lts Show) => Rec lts -> [(String, String)]
-showRec = reflectRec @Show Proxy (\k v -> (k, show v))
+showRec = reflectRec @Show Proxy (\k v -> (T.unpack (decodeField (T.pack k)), show v))
 
 recToValue :: forall lts. (RecApply lts lts ToJSON) => Rec lts -> Value
-recToValue r = object $ reflectRec @ToJSON Proxy (\k v -> (T.pack k, toJSON v)) r
+recToValue r = object $ reflectRec @ToJSON Proxy (\k v -> (decodeField (T.pack k), toJSON v)) r
 
 recToEncoding :: forall lts. (RecApply lts lts ToJSON) => Rec lts -> Encoding
-recToEncoding r = pairs $ mconcat $ reflectRec @ToJSON Proxy (\k v -> (T.pack k .= v)) r
+recToEncoding r = pairs $ mconcat $ reflectRec @ToJSON Proxy (\k v -> (decodeField (T.pack k) .= v)) r
 
 recJsonParser :: forall lts s. (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => Value -> Parser (Rec lts)
 recJsonParser =
@@ -562,7 +578,7 @@ instance
       let lbl :: FldProxy l
           lbl = FldProxy
       rest <- recJsonParse initSize obj
-      (v :: t) <- obj .: T.pack (symbolVal lbl)
+      (v :: t) <- obj .: decodeField (T.pack (symbolVal lbl))
       pure $ unsafeRCons (lbl := v) rest
 
 -- | Machinery for NFData
