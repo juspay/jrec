@@ -7,6 +7,7 @@ module JRec
     (:=) (..),
     Rec,
     pattern Rec,
+    insertOrSet,
     append,
     union,
   )
@@ -40,6 +41,23 @@ unField _ (_ R.:= value) = value
 -- Other operations
 ----------------------------------------------------------------------------
 
+-- TODO: Doesn't replace yet. See TODO in `union` below.
+insertOrSet ::
+  forall rhs res label value.
+  ( KnownNat (R.RecSize rhs),
+    KnownNat (R.RecTyIdxH 0 label res),
+    KnownNat (1 + R.RecSize rhs),
+    KnownSymbol label,
+    R.RecCopy rhs rhs res,
+    value ~ R.RecTy label res,
+    res ~ R.Insert (label := value) rhs
+    -- res ~ R.RecAppendH '[label := R.RecTy label res] rhs rhs '[]
+  ) =>
+  label := value ->
+  Rec rhs ->
+  Rec res
+insertOrSet = union . Rec
+
 -- Appends records, without removing duplicates.
 --
 -- Left-biased. Does not sort.
@@ -48,7 +66,7 @@ append ::
   ( KnownNat (R.RecSize lhs),
     KnownNat (R.RecSize rhs),
     KnownNat (R.RecSize lhs + R.RecSize rhs),
-    res ~ R.RecAppend lhs rhs,
+    res ~ R.Union lhs rhs,
     R.RecCopy lhs lhs res,
     R.RecCopy rhs rhs res
   ) =>
@@ -67,7 +85,7 @@ union ::
   ( KnownNat (R.RecSize lhs),
     KnownNat (R.RecSize rhs),
     KnownNat (R.RecSize lhs + R.RecSize rhs),
-    res ~ R.RecAppend lhs rhs,
+    res ~ R.Union lhs rhs,
     R.RecCopy lhs lhs res,
     R.RecCopy rhs rhs res
   ) =>

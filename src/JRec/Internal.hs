@@ -221,6 +221,15 @@ type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
       )
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
+type family Insert (a :: *) (xs :: [*]) where
+  Insert a '[] = a ': '[]
+  Insert (a := t1) (a := t2 ': xs) = a := t1 ': xs
+  Insert (a := t1) (x := t2 ': xs) = x := t2 ': Insert (a := t1) xs
+
+type family Union xs ys where
+  Union '[] ys = ys
+  Union (x := t ': xs) ys = Insert (x := t) (Union xs ys)
+
 type RecAppend lhs rhs = RecAppendH lhs rhs rhs '[]
 
 type family ListConcat (xs :: [*]) (ys :: [*]) :: [*] where
@@ -374,7 +383,8 @@ combine ::
   ( KnownNat (RecSize lhs),
     KnownNat (RecSize rhs),
     KnownNat (RecSize lhs + RecSize rhs),
-    res ~ RecAppend lhs rhs,
+    -- res ~ RecAppend lhs rhs,
+    res ~ Union lhs rhs,
     RecCopy lhs lhs res,
     RecCopy rhs rhs res
   ) =>
@@ -402,7 +412,8 @@ combine lts rts =
   ( KnownNat (RecSize lhs),
     KnownNat (RecSize rhs),
     KnownNat (RecSize lhs + RecSize rhs),
-    res ~ RecAppend lhs rhs,
+    -- res ~ RecAppend lhs rhs,
+    res ~ Union lhs rhs,
     RecCopy lhs lhs res,
     RecCopy rhs rhs res
   ) =>
@@ -537,6 +548,7 @@ instance
 -- TODO: this probably slows typechecking in euler-ps, and should not be needed
 type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where
   RemoveAccessTo l (l := t ': lts) = RemoveAccessTo l lts
+  -- FIXME: Why l instead of q?
   RemoveAccessTo q (l := t ': lts) = (l := t ': RemoveAccessTo l lts)
   RemoveAccessTo q '[] = '[]
 
@@ -609,7 +621,8 @@ instance
 instance
   ( FromNative l lhs,
     FromNative r rhs,
-    lts ~ RecAppend lhs rhs,
+    -- lts ~ RecAppend lhs rhs,
+    lts ~ Union lhs rhs,
     RecCopy lhs lhs lts,
     RecCopy rhs rhs lts,
     KnownNat (RecSize lhs),
