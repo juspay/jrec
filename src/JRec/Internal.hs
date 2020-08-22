@@ -221,21 +221,9 @@ type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
       )
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
-type RecAppend lhs rhs = RecAppendH lhs rhs rhs '[]
-
-type family ListConcat (xs :: [*]) (ys :: [*]) :: [*] where
-  ListConcat '[] ys = ys
-  ListConcat xs '[] = xs
-  ListConcat (x ': xs) ys = x ': (ListConcat xs ys)
-
-type family ListReverse (xs :: [*]) :: [*] where
-  ListReverse (x ': xs) = ListConcat (ListReverse xs) '[x]
-  ListReverse '[] = '[]
-
-type family RecAppendH (lhs :: [*]) (rhs :: [*]) (rhsall :: [*]) (accum :: [*]) :: [*] where
-  RecAppendH (l := t ': lhs) (m := u ': rhs) rhsall acc = RecAppendH (l := t ': lhs) rhs rhsall acc
-  RecAppendH (l := t ': lhs) '[] rhsall acc = RecAppendH lhs rhsall rhsall (l := t ': acc)
-  RecAppendH '[] rhs rhsall acc = ListConcat (ListReverse acc) rhsall
+type family RecAppend lhs rhs where
+  RecAppend '[] rhs = rhs
+  RecAppend (x := t ': xs) rhs = x := t ': RecAppend xs rhs
 
 type family RecSize (lts :: [*]) :: Nat where
   RecSize '[] = 0
