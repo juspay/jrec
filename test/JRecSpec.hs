@@ -44,10 +44,11 @@ spec = do
       Rec (#a := 1) `append` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
     it "append with duplicates" $ do
+      pendingWith "append is overwriting all duplicate fields with same value"
       let r1 = Rec (#b := 5, #a := 6)
           r2 = Rec (#c := 7, #a := 8)
-      r1 `union` r2
-        `shouldBe` Rec (#b := 5, #a := 8, #c := 7, #a := 8)
+      r1 `append` r2
+        `shouldBe` Rec (#b := 5, #a := 6, #c := 7, #a := 8)
   describe "union" $ do
     it "simple union" $ do
       Rec (#a := 1) `union` Rec (#b := 2)
