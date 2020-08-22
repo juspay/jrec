@@ -42,7 +42,7 @@ unField _ (_ R.:= value) = value
 
 -- Appends records, without removing duplicates.
 --
--- Left-biased. Does not sort.
+-- FIXME: see spec
 append ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),
@@ -57,24 +57,22 @@ append ::
   Rec res
 append = R.combine
 
--- Merges records, removing duplicates (TODO)
+-- Merges records, removing duplicates
 --
 -- Left-biased. Does not sort.
---
--- FIXME: This doesn't remove duplicates?
 union ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),
     KnownNat (R.RecSize rhs),
     KnownNat (R.RecSize lhs + R.RecSize rhs),
-    res ~ R.RecAppend lhs rhs,
+    res ~ R.Union lhs rhs,
     R.RecCopy lhs lhs res,
     R.RecCopy rhs rhs res
   ) =>
   Rec lhs ->
   Rec rhs ->
   Rec res
-union = R.combine
+union = R.union
 
 ----------------------------------------------------------------------------
 -- Generic

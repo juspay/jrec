@@ -221,6 +221,15 @@ type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
       )
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
+type family Insert (a :: *) (xs :: [*]) where
+  Insert (a := t) '[] = a := t ': '[]
+  Insert (a := t1) (a := t2 ': xs) = a := t1 ': xs
+  Insert (a := t1) (x := t2 ': xs) = x := t2 ': Insert (a := t1) xs
+
+type family Union xs ys where
+  Union xs '[] = xs
+  Union xs (y := t ': ys) = Union (Insert (y := t) xs) ys
+
 type family RecAppend lhs rhs where
   RecAppend '[] rhs = rhs
   RecAppend (x := t ': xs) rhs = x := t ': RecAppend xs rhs
@@ -383,6 +392,39 @@ combine lts rts =
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
+
+-- | Union two records
+--
+-- NOTE: changed from original superrecord to not require a 'Sort'
+union ::
+  forall lhs rhs res.
+  ( KnownNat (RecSize lhs),
+    KnownNat (RecSize rhs),
+    KnownNat (RecSize lhs + RecSize rhs),
+    res ~ Union lhs rhs,
+    RecCopy lhs lhs res,
+    RecCopy rhs rhs res
+  ) =>
+  Rec lhs ->
+  Rec rhs ->
+  Rec res
+union lts rts =
+  let !(I# size#) =
+        fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs + RecSize rhs))
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# size# (error "No value") s# of
+            (# s'#, arr# #) ->
+              -- Copy rhs first, so that lhs can override later so as to retain
+              -- the left-biased semantics of union.
+              case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s'# of
+                s''# ->
+                  case recCopyInto (Proxy :: Proxy lhs) lts (Proxy :: Proxy res) arr# s''# of
+                    s'''# ->
+                      case unsafeFreezeSmallArray# arr# s'''# of
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+{-# INLINE union #-}
+
 
 -- | Alias for 'combine'
 (++:) ::
