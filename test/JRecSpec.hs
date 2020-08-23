@@ -7,8 +7,8 @@ import Test.Hspec
 spec :: Spec
 spec = do
   it "polymorphic" $ do
-    (Rec (#u := True, #a := 5, #a := 2, #b := 6) & #u .~ 5)
-      `shouldBe` Rec (#u := 5, #a := 5, #a := 2, #b := 6)
+    (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
+      `shouldBe` Rec (#u := 5, #a := 5, #b := 6, #a := 2)
   it "show" $ do
     show (Rec ()) `shouldBe` "{}"
     show (Rec (#foo := True)) `shouldBe` "{foo = True}"
@@ -58,6 +58,12 @@ spec = do
           r2 = Rec (#c := 7, #a := 8)
       r1 `union` r2
         `shouldBe` Rec (#b := 5, #a := 6, #c := 7)
+  describe "insert" $ do 
+    it "simple insert" $ do 
+      (#a := 1) `insert` Rec (#b := 2, #c := 3)
+        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+    it "duplicate insert should be disallowed" $ do 
+      pendingWith "TODO"
 --  describe "insertOrSet" $ do
 --    it "distinct" $ do
 --      insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))

@@ -9,6 +9,7 @@ module JRec
     pattern Rec,
     append,
     union,
+    insert,
     -- insertOrSet
   )
 where
@@ -74,6 +75,20 @@ union ::
   Rec rhs ->
   Rec res
 union = R.union
+
+-- | Insert a field into a record that does not already contain it
+insert :: 
+  forall label value lts res. 
+  ( KnownNat (1 + R.RecSize lts),
+    KnownNat (R.RecSize lts),
+    KnownSymbol label,
+    R.RecCopy lts lts res,
+    res ~ ((label := value) : lts),
+    R.KeyDoesNotExist label lts
+  ) => 
+  label := value ->
+  Rec lts -> Rec res
+insert = R.combine . Rec 
 
 --insertOrSet ::
 --  forall label value rhs res.

@@ -165,7 +165,8 @@ instance RecCopy '[] lts rts where
 instance
   ( Has l rts t,
     Has l lts t,
-    RecCopy (RemoveAccessTo l (l := t ': pts)) lts rts
+    nts ~ RemoveAccessTo l (l := t ': pts),
+    RecCopy nts lts rts
   ) =>
   RecCopy (l := t ': pts) lts rts
   where
@@ -173,13 +174,11 @@ instance
     let lbl :: FldProxy l
         lbl = FldProxy
         val = get lbl lts
-        pNext :: Proxy (RemoveAccessTo l (l := t ': pts))
-        pNext = Proxy
         !(I# index#) =
           fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l rts)))
         size# = sizeofSmallMutableArray# tgt#
      in case writeSmallArray# tgt# (size# -# index# -# 1#) (unsafeCoerce# val) s# of
-          s'# -> recCopyInto pNext lts prxy tgt# s'#
+          s'# -> recCopyInto (Proxy :: Proxy nts) lts prxy tgt# s'#
 
 -- | Prepend a record entry to a record 'Rec'. Assumes that the record was created with
 -- 'unsafeRNil' and still has enough free slots, mutates the original 'Rec' which should
