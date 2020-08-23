@@ -400,7 +400,7 @@ union ::
   forall lhs rhs res.
   ( KnownNat (RecSize lhs),
     KnownNat (RecSize rhs),
-    KnownNat (RecSize lhs + RecSize rhs),
+    KnownNat (RecSize res),
     res ~ Union lhs rhs,
     RecCopy lhs lhs res,
     RecCopy rhs rhs res
@@ -410,7 +410,7 @@ union ::
   Rec res
 union lts rts =
   let !(I# size#) =
-        fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs + RecSize rhs))
+        fromIntegral $ natVal' (proxy# :: Proxy# (RecSize (Union lhs rhs)))
    in runST' $
         ST $ \s# ->
           case newSmallArray# size# (error "No value") s# of

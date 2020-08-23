@@ -65,7 +65,7 @@ union ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),
     KnownNat (R.RecSize rhs),
-    KnownNat (R.RecSize lhs + R.RecSize rhs),
+    KnownNat (R.RecSize res),
     res ~ R.Union lhs rhs,
     R.RecCopy lhs lhs res,
     R.RecCopy rhs rhs res
