@@ -58,3 +58,10 @@ spec = do
           r2 = Rec (#c := 7, #a := 8)
       r1 `union` r2
         `shouldBe` Rec (#b := 5, #a := 6, #c := 7)
+--  describe "insertOrSet" $ do
+--    it "distinct" $ do
+--      insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))
+--        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+--    it "overwrite" $ do
+--      insertOrSet (#c := 1) (Rec (#b := 2, #c := 3))
+--        `shouldBe` Rec (#b := 2, #c := 1)

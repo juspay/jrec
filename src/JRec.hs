@@ -9,6 +9,7 @@ module JRec
     pattern Rec,
     append,
     union,
+    -- insertOrSet
   )
 where
 
@@ -73,6 +74,22 @@ union ::
   Rec rhs ->
   Rec res
 union = R.union
+
+--insertOrSet ::
+--  forall label value rhs res.
+--  ( KnownNat (R.RecSize rhs),
+--    KnownNat (R.RecTyIdxH 0 label res),
+--    KnownNat (1 + R.RecSize rhs),
+--    KnownSymbol label,
+--    res ~ R.Union '[label := value] rhs,
+--    value ~ R.RecTy label res,
+--    R.RecCopy rhs rhs res
+--  ) =>
+--  label := value ->
+--  Rec rhs ->
+--  Rec res
+--insertOrSet = union . Rec
+--
 
 ----------------------------------------------------------------------------
 -- Generic
