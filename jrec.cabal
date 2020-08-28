@@ -82,4 +82,5 @@ test-suite jrec-test
     base,
     hspec,
     QuickCheck,
-    lens
+    lens,
+    should-not-typecheck

@@ -1,8 +1,10 @@
+{-# OPTIONS_GHC -fdefer-type-errors #-}
 module JRecSpec (spec) where
 
 import Control.Lens ((&), (.~), (^.))
 import JRec
 import Test.Hspec
+import Test.ShouldNotTypecheck
 
 spec :: Spec
 spec = do
@@ -50,7 +52,7 @@ spec = do
       Rec (#a := 1) `append` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
     it "append with duplicates" $ do
-      -- `append` will not deal with duplicates; based on current
+      -- TODO: `append` will not deal with duplicates; based on current
       -- implementation, the last value (here, 8) will overwrite all duplicate
       -- fields. See `union` if you want to deal with duplicates sensibly.
       pendingWith "append should just append?"
@@ -71,12 +73,8 @@ spec = do
     it "simple insert" $ do 
       (#a := 1) `insert` Rec (#b := 2, #c := 3)
         `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
-    -- TODO: type check should fail
-    -- it "insert of already existing field should fail" $ do 
-    --  (#a := 1) `insert` Rec (#b := 2, #a := 0, #c := 3)
-    --   `shouldBe` Rec (#a := 1, #b := 2, #a := 0, #c := 3)
-    it "duplicate insert should be disallowed" $ do 
-      pendingWith "TODO"
+    it "type-check fails if field already exists" $ do 
+      shouldNotTypecheck ((#a := '1') `insert` Rec (#b := '2', #a := '0'))
   describe "insertOrSet" $ do
     it "distinct" $ do
       insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))

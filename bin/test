@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 set -xe
-nix-shell --pure --run "ghcid $* -c 'cabal new-repl test:jrec-test' -T \":main $*\""
+
+# NOTE: ghcid should be run with -W to allow warnings from should-not-typecheck
+nix-shell --pure --run "ghcid $* -W -c 'cabal new-repl test:jrec-test' -T \":main $*\""

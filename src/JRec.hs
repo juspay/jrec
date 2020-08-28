@@ -90,7 +90,7 @@ insert ::
     KnownSymbol label,
     R.RecCopy lts lts res,
     res ~ ((label := value) : lts),
-    R.KeyDoesNotExist label lts
+    R.RemoveAccessTo label lts ~ lts
   ) => 
   label := value ->
   Rec lts -> Rec res
