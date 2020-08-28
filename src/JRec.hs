@@ -10,6 +10,7 @@ module JRec
     append,
     union,
     insert,
+    insertOrSet
   )
 where
 
@@ -95,21 +96,23 @@ insert ::
   Rec lts -> Rec res
 insert = R.combine . Rec 
 
---insertOrSet ::
---  forall label value rhs res.
---  ( KnownNat (R.RecSize rhs),
---    KnownNat (R.RecTyIdxH 0 label res),
---    KnownNat (1 + R.RecSize rhs),
---    KnownSymbol label,
---    res ~ R.Union '[label := value] rhs,
---    value ~ R.RecTy label res,
---    R.RecCopy rhs rhs res
---  ) =>
---  label := value ->
---  Rec rhs ->
---  Rec res
---insertOrSet = union . Rec
+-- | Insert a field into a record. Set it if it already exists
 --
+-- O(n) type check complexity.
+insertOrSet ::
+  forall label value rhs res.
+  ( KnownNat (R.RecSize rhs),
+    KnownNat (R.RecSize res),
+    KnownNat (R.RecTyIdxH 0 label res),
+    KnownSymbol label,
+    value ~ R.RecTy label res,
+    R.Reverse (R.Insert (label := value) (R.Reverse rhs)) ~ res,
+    R.RecCopy rhs rhs res
+  ) =>
+  label := value ->
+  Rec rhs ->
+  Rec res
+insertOrSet = R.insert
 
 ----------------------------------------------------------------------------
 -- Generic

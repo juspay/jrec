@@ -77,10 +77,10 @@ spec = do
     --   `shouldBe` Rec (#a := 1, #b := 2, #a := 0, #c := 3)
     it "duplicate insert should be disallowed" $ do 
       pendingWith "TODO"
---  describe "insertOrSet" $ do
---    it "distinct" $ do
---      insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))
---        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
---    it "overwrite" $ do
---      insertOrSet (#c := 1) (Rec (#b := 2, #c := 3))
---        `shouldBe` Rec (#b := 2, #c := 1)
+  describe "insertOrSet" $ do
+    it "distinct" $ do
+      insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))
+        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+    it "overwrite" $ do
+      insertOrSet (#c := 1) (Rec (#b := 2, #c := 3))
+        `shouldBe` Rec (#b := 2, #c := 1)

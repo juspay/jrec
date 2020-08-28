@@ -222,18 +222,23 @@ type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
       )
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
+type family Reverse (xs :: [*]) where 
+  Reverse '[] = '[]
+  Reverse (x ': xs) = RecAppend (Reverse xs) '[x]
+
 type family Insert (a :: *) (xs :: [*]) where
-  Insert (a := t) '[] = a := t ': '[]
-  Insert (a := t1) (a := t2 ': xs) = a := t1 ': xs
-  Insert (a := t1) (x := t2 ': xs) = x := t2 ': Insert (a := t1) xs
+  Insert x '[] = x ': '[]
+  Insert (a := v) (a := _ ': xs) = a := v ': xs
+  Insert a (x ': xs) = x ': Insert a xs
 
 type family Union xs ys where
   Union xs '[] = xs
   Union xs (y := t ': ys) = Union (Insert (y := t) xs) ys
 
+-- TODO: Rename to `Append`, because it just deals with general type list?
 type family RecAppend lhs rhs where
   RecAppend '[] rhs = rhs
-  RecAppend (x := t ': xs) rhs = x := t ': RecAppend xs rhs
+  RecAppend (x ': xs) rhs = x ': RecAppend xs rhs
 
 type family RecSize (lts :: [*]) :: Nat where
   RecSize '[] = 0
@@ -394,9 +399,7 @@ combine lts rts =
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
 
--- | Union two records
---
--- NOTE: changed from original superrecord to not require a 'Sort'
+-- | Union two records (left-biased)
 union ::
   forall lhs rhs res.
   ( KnownNat (RecSize lhs),
@@ -425,6 +428,37 @@ union lts rts =
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE union #-}
+
+-- | Insert a field
+-- 
+-- Insert at beginning, unless the field already exists, in which case set it
+-- directly.
+insert ::
+  forall l v rhs res.
+  ( KnownNat (RecSize rhs),
+    KnownNat (RecSize res),
+    res ~ Reverse (Insert (l := v) (Reverse rhs)),
+    RecCopy '[l := v] '[l := v] res,
+    RecCopy rhs rhs res
+  ) =>
+  l := v ->
+  Rec rhs ->
+  Rec res
+insert (l := v) rts =
+  let !(I# size#) =
+        fromIntegral $ natVal' (proxy# :: Proxy# (RecSize res))
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# size# (error "No value") s# of
+            (# s'#, arr# #) ->
+              case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s'# of
+                s''# ->
+                  case recCopyInto (Proxy :: Proxy '[l := v]) (unsafeRCons (l := v) $ unsafeRNil 1) (Proxy :: Proxy res) arr# s''# of
+                    s'''# ->
+                      case unsafeFreezeSmallArray# arr# s'''# of
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+{-# INLINE insert #-}
+
 
 
 -- | Alias for 'combine'
