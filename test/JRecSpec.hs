@@ -9,6 +9,12 @@ spec = do
   it "polymorphic" $ do
     (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
       `shouldBe` Rec (#u := 5, #a := 5, #b := 6, #a := 2)
+  describe "eq" $ do 
+    -- eq can compare only the first matching field, discarding the rest. 
+    it "fails if first matching field doesn't compare" $ do
+      Rec (#a := 1, #a := 2) `shouldNotBe` Rec (#a := 0, #a := 2)
+    it "succeeds if first matching field compares" $ do
+      Rec (#a := 1, #a := 2) `shouldBe` Rec (#a := 1, #a := 0)
   it "show" $ do
     show (Rec ()) `shouldBe` "{}"
     show (Rec (#foo := True)) `shouldBe` "{foo = True}"
@@ -62,6 +68,10 @@ spec = do
     it "simple insert" $ do 
       (#a := 1) `insert` Rec (#b := 2, #c := 3)
         `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+    -- TODO: type check should fail
+    -- it "insert of already existing field should fail" $ do 
+    --  (#a := 1) `insert` Rec (#b := 2, #a := 0, #c := 3)
+    --   `shouldBe` Rec (#a := 1, #b := 2, #a := 0, #c := 3)
     it "duplicate insert should be disallowed" $ do 
       pendingWith "TODO"
 --  describe "insertOrSet" $ do
