@@ -602,7 +602,7 @@ instance
 -- TODO: this probably slows typechecking in euler-ps, and should not be needed
 type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where
   RemoveAccessTo l (l := t ': lts) = RemoveAccessTo l lts
-  RemoveAccessTo q (l := t ': lts) = (l := t ': RemoveAccessTo l lts)
+  RemoveAccessTo q (l := t ': lts) = (l := t ': RemoveAccessTo q lts)
   RemoveAccessTo q '[] = '[]
 
 -- | Machinery to implement parseJSON
