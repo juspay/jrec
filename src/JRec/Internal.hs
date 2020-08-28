@@ -200,6 +200,8 @@ unsafeRCons (_ := val) (MkRec vec#) =
     ST $ \s# ->
       case unsafeThawSmallArray# vec# s# of
         (# s'#, arr# #) ->
+          -- Write the value to be cons'ed at the *end* (hence size#) of the
+          -- array, because `Rec` stores values in reverse order.
           case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
             s''# ->
               case unsafeFreezeSmallArray# arr# s''# of
@@ -707,6 +709,8 @@ class NoConstraint x
 
 instance NoConstraint x
 
+-- | Convert a record into a list of fields.
+-- 
 -- | Not present in original superrecord
 getFields :: RecApply fields fields NoConstraint => Rec fields -> [Any]
 getFields =

@@ -10,7 +10,6 @@ module JRec
     append,
     union,
     insert,
-    -- insertOrSet
   )
 where
 
@@ -44,7 +43,9 @@ unField _ (_ R.:= value) = value
 
 -- Appends records, without removing duplicates.
 --
--- FIXME: see spec
+-- O(n + m) type check complexity.
+--
+-- FIXME: overwrites all indices (see spec)
 append ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),
@@ -61,7 +62,9 @@ append = R.combine
 
 -- Merges records, removing duplicates
 --
--- Left-biased. Does not sort.
+-- Left-biased. Does not sort. 
+-- 
+-- O(n * m) type check complexity.
 union ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),
@@ -77,6 +80,8 @@ union ::
 union = R.union
 
 -- | Insert a field into a record that does not already contain it
+--
+-- O(n) type check complexity.
 insert :: 
   forall label value lts res. 
   ( KnownNat (1 + R.RecSize lts),
