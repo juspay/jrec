@@ -45,7 +45,7 @@ unField _ (_ R.:= value) = value
 --
 -- O(n + m) type check complexity.
 --
--- FIXME: overwrites all indices (see spec)
+-- FIXME: See spec for a bug when there are duplicates.
 append ::
   forall lhs rhs res.
   ( KnownNat (R.RecSize lhs),

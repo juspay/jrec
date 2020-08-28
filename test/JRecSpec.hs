@@ -50,7 +50,10 @@ spec = do
       Rec (#a := 1) `append` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
     it "append with duplicates" $ do
-      pendingWith "append is overwriting all duplicate fields with same value"
+      -- `append` will not deal with duplicates; based on current
+      -- implementation, the last value (here, 8) will overwrite all duplicate
+      -- fields. See `union` if you want to deal with duplicates sensibly.
+      pendingWith "append should just append?"
       let r1 = Rec (#b := 5, #a := 6)
           r2 = Rec (#c := 7, #a := 8)
       r1 `append` r2
@@ -59,7 +62,7 @@ spec = do
     it "simple union" $ do
       Rec (#a := 1) `union` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
-    it "union with duplicates" $ do
+    it "union with duplicates (left-biased)" $ do
       let r1 = Rec (#b := 5, #a := 6)
           r2 = Rec (#c := 7, #a := 8)
       r1 `union` r2
