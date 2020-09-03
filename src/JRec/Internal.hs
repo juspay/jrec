@@ -109,7 +109,7 @@ instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
   {-# INLINE (==) #-}
 
-#if WITH_AESON
+#ifdef WITH_AESON
 instance
   ( RecApply lts lts ToJSON
   ) =>
