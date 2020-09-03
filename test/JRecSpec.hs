@@ -5,8 +5,16 @@ import JRec
 import Test.Hspec
 import GHC.Stack
 
+data Pair a = Pair !a !a
+  deriving (Eq, Show)
+
 spec :: HasCallStack => Spec
 spec = do
+  it "is not crazy" $ do
+    Pair (Rec (#a := 1)) (Rec (#a := 2))
+      `shouldNotBe` Pair (Rec (#a := 1)) (Rec (#a := 1))
+    Pair (Rec (#a := 1)) (Rec (#a := 2))
+      `shouldNotBe` Pair (Rec (#a := 2)) (Rec (#a := 2))
   it "polymorphic" $ do
     (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
       `shouldBe` Rec (#u := 5, #a := 5, #b := 6, #a := 2)
