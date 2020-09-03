@@ -17,6 +17,13 @@ extra-source-files:
   CHANGELOG.md
   README.md
 
+flag with-aeson
+  description: Enable Aeson instances
+  -- don't let the solver fiddle with the flag
+  manual: True
+  -- with instances by default
+  default: True
+
 -- A common stanza to share with tests, so that ghcid (bin/test) will reload
 -- instantly when the library sources change (without us having to restart it).
 common library-common 
@@ -72,6 +79,8 @@ library
   other-modules:
     JRec.Tuple
     JRec.Field
+  if flag(with-aeson)
+    cpp-options: -DWITH_AESON
 
 test-suite jrec-test
   import: library-common

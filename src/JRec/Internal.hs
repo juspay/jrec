@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -108,6 +109,7 @@ instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
   {-# INLINE (==) #-}
 
+#if WITH_AESON
 instance
   ( RecApply lts lts ToJSON
   ) =>
@@ -118,6 +120,7 @@ instance
 
 instance (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => FromJSON (Rec lts) where
   parseJSON = recJsonParser defaultJSONOptions
+#endif
 
 instance RecNfData lts lts => NFData (Rec lts) where
   rnf = recNfData (Proxy :: Proxy lts)
