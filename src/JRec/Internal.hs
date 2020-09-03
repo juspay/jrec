@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -87,6 +88,12 @@ data Rec (lts :: [*]) = MkRec
   { _unRec :: SmallArray# Any -- Note that the values are physically in reverse order
   }
 
+data JSONOptions = JSONOptions
+  {fieldTransform :: String -> String}
+
+defaultJSONOptions :: JSONOptions
+defaultJSONOptions = JSONOptions {fieldTransform = id}
+
 type role Rec representational
 
 instance
@@ -102,16 +109,18 @@ instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
   {-# INLINE (==) #-}
 
+#ifdef WITH_AESON
 instance
   ( RecApply lts lts ToJSON
   ) =>
   ToJSON (Rec lts)
   where
-  toJSON = recToValue
-  toEncoding = recToEncoding
+  toJSON = recToValue defaultJSONOptions
+  toEncoding = recToEncoding defaultJSONOptions
 
 instance (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => FromJSON (Rec lts) where
-  parseJSON = recJsonParser
+  parseJSON = recJsonParser defaultJSONOptions
+#endif
 
 instance RecNfData lts lts => NFData (Rec lts) where
   rnf = recNfData (Proxy :: Proxy lts)
@@ -222,7 +231,7 @@ type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
       )
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
-type family Reverse (xs :: [*]) where 
+type family Reverse (xs :: [*]) where
   Reverse '[] = '[]
   Reverse (x ': xs) = RecAppend (Reverse xs) '[x]
 
@@ -430,7 +439,7 @@ union lts rts =
 {-# INLINE union #-}
 
 -- | Insert a field
--- 
+--
 -- Insert at beginning, unless the field already exists, in which case set it
 -- directly.
 insert ::
@@ -458,8 +467,6 @@ insert (l := v) rts =
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE insert #-}
-
-
 
 -- | Alias for 'combine'
 (++:) ::
@@ -538,16 +545,21 @@ reflectRecFold _ f r =
 showRec :: forall lts. (RecApply lts lts Show) => Rec lts -> [(String, String)]
 showRec = reflectRec @Show Proxy (\k v -> (k, show v))
 
-recToValue :: forall lts. (RecApply lts lts ToJSON) => Rec lts -> Value
-recToValue r = object $ reflectRec @ToJSON Proxy (\k v -> (T.pack k, toJSON v)) r
+recToValue :: forall lts. (RecApply lts lts ToJSON) => JSONOptions -> Rec lts -> Value
+recToValue options r =
+  object $ reflectRec @ToJSON Proxy (\k v -> (T.pack (fieldTransform options k), toJSON v)) r
 
-recToEncoding :: forall lts. (RecApply lts lts ToJSON) => Rec lts -> Encoding
-recToEncoding r = pairs $ mconcat $ reflectRec @ToJSON Proxy (\k v -> (T.pack k .= v)) r
+recToEncoding :: forall lts. (RecApply lts lts ToJSON) => JSONOptions -> Rec lts -> Encoding
+recToEncoding options r =
+  pairs $ mconcat $ reflectRec @ToJSON Proxy (\k v -> (T.pack (fieldTransform options k) .= v)) r
 
-recJsonParser :: forall lts s. (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => Value -> Parser (Rec lts)
-recJsonParser =
+recJsonParser ::
+  forall lts s.
+  (RecSize lts ~ s, KnownNat s, RecJsonParse lts) =>
+  (JSONOptions -> Value -> Parser (Rec lts))
+recJsonParser options =
   withObject "Record" $ \o ->
-    recJsonParse initSize o
+    recJsonParse options initSize o
   where
     initSize = fromIntegral $ natVal' (proxy# :: Proxy# s)
 
@@ -607,10 +619,10 @@ type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where
 
 -- | Machinery to implement parseJSON
 class RecJsonParse (lts :: [*]) where
-  recJsonParse :: Int -> Object -> Parser (Rec lts)
+  recJsonParse :: JSONOptions -> Int -> Object -> Parser (Rec lts)
 
 instance RecJsonParse '[] where
-  recJsonParse initSize _ = pure (unsafeRNil initSize)
+  recJsonParse _ initSize _ = pure (unsafeRNil initSize)
 
 instance
   ( KnownSymbol l,
@@ -622,13 +634,12 @@ instance
   ) =>
   RecJsonParse (l := t ': lts)
   where
-  recJsonParse initSize obj =
-    do
-      let lbl :: FldProxy l
-          lbl = FldProxy
-      rest <- recJsonParse initSize obj
-      (v :: t) <- obj .: T.pack (symbolVal lbl)
-      pure $ unsafeRCons (lbl := v) rest
+  recJsonParse options initSize obj = do
+    let lbl :: FldProxy l
+        lbl = FldProxy
+    rest <- recJsonParse options initSize obj
+    (v :: t) <- obj .: T.pack (fieldTransform options (symbolVal lbl))
+    pure $ unsafeRCons (lbl := v) rest
 
 -- | Machinery for NFData
 class RecNfData (lts :: [*]) (rts :: [*]) where
@@ -744,7 +755,7 @@ class NoConstraint x
 instance NoConstraint x
 
 -- | Convert a record into a list of fields.
--- 
+--
 -- | Not present in original superrecord
 getFields :: RecApply fields fields NoConstraint => Rec fields -> [Any]
 getFields =
