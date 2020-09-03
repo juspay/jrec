@@ -21,6 +21,8 @@ in {
       haskellPackages.override {
         overrides = self: super: with pkgs.haskell.lib; {
           jrec = self.callCabal2nix "jrec" (gitignoreSource ./.) {};
+          # https://github.com/lspitzner/data-tree-print/pull/2
+          data-tree-print = doJailbreak super.data-tree-print;
         };
       };
     projectShell = 
