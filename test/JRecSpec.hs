@@ -1,12 +1,11 @@
-{-# OPTIONS_GHC -fdefer-type-errors #-}
 module JRecSpec (spec) where
 
 import Control.Lens ((&), (.~), (^.))
 import JRec
 import Test.Hspec
-import Test.ShouldNotTypecheck
+import GHC.Stack
 
-spec :: Spec
+spec :: HasCallStack => Spec
 spec = do
   it "polymorphic" $ do
     (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
@@ -73,8 +72,6 @@ spec = do
     it "simple insert" $ do 
       (#a := 1) `insert` Rec (#b := 2, #c := 3)
         `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
-    it "type-check fails if field already exists" $ do 
-      shouldNotTypecheck ((#a := '1') `insert` Rec (#b := '2', #a := '0'))
   describe "insertOrSet" $ do
     it "distinct" $ do
       insertOrSet (#a := 1) (Rec (#b := 2, #c := 3))
