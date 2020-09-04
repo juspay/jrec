@@ -14,6 +14,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -232,9 +233,7 @@ type family RecAll (c :: u -> Constraint) (rs :: [u]) :: Constraint where
 type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
   KeyDoesNotExist l '[] = 'True ~ 'True
   KeyDoesNotExist l (l := t ': lts) =
-    TypeError
-      ( 'Text "Duplicate key " ':<>: 'Text l
-      )
+    TypeError ('Text "Duplicate key " ':<>: 'ShowType l)
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
 type family Reverse (xs :: [*]) where
@@ -415,6 +414,32 @@ combine lts rts =
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
+
+-- | Append two records
+append ::
+  forall lhs rhs res.
+  ( KnownNat (RecSize lhs),
+    KnownNat (RecSize rhs),
+    res ~ RecAppend lhs rhs
+  ) =>
+  Rec lhs ->
+  Rec rhs ->
+  Rec res
+append (MkRec lts#) (MkRec rts#) =
+  let !(I# sizeL#) = fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs))
+      !(I# sizeR#) = fromIntegral $ natVal' (proxy# :: Proxy# (RecSize rhs))
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# (sizeL# +# sizeR#) (error "No value") s# of
+            (# s'#, arr# #) ->
+              -- We copy rts first because the values are stored in the opposite order
+              case copySmallArray# rts# 0# arr# 0# sizeR# s'# of
+                s''# ->
+                  case copySmallArray# lts# 0# arr# sizeR# sizeL# s''# of
+                    s'''# ->
+                      case unsafeFreezeSmallArray# arr# s'''# of
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+{-# INLINE append #-}
 
 -- | Union two records (left-biased)
 union ::
@@ -738,9 +763,11 @@ instance NoConstraint x
 -- | Convert a record into a list of fields.
 --
 -- | Not present in original superrecord
-getFields :: Rec fields -> [Any]
+getFields :: Rec lts -> [Any]
 getFields (MkRec vec#) =
-  [ case indexSmallArray# vec# (size# -# index# -# 1#) of
-      (# a# #) -> a
-    | I# i <- [size -1, size -2 .. 0]
+  [ case indexSmallArray# vec# index# of
+      (# a #) -> a
+    | I# index# <- [size - 1, size - 2 .. 0]
   ]
+  where
+    size = I# (sizeofSmallArray# vec#)
