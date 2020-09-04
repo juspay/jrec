@@ -14,6 +14,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -110,7 +111,8 @@ instance
   show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
 
 instance RecEq lts lts => Eq (Rec lts) where
-  (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
+  (==) (a :: Rec lts) (b :: Rec lts) =
+    recEq a b (Proxy :: Proxy lts) 0
   {-# INLINE (==) #-}
 
 #ifdef WITH_AESON
@@ -127,7 +129,7 @@ instance (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => FromJSON (Rec lts) w
 #endif
 
 instance RecNfData lts lts => NFData (Rec lts) where
-  rnf = recNfData (Proxy :: Proxy lts)
+  rnf r = recNfData (Proxy :: Proxy lts) r 0
 
 newtype ForallST a = ForallST {unForallST :: forall s. ST s a}
 
@@ -210,10 +212,9 @@ instance RecCopy '[] lts rts where
 instance
   ( Has l rts t,
     Has l lts t,
-    nts ~ RemoveAccessTo l (l := t ': pts),
     RecCopy nts lts rts
   ) =>
-  RecCopy (l := t ': pts) lts rts
+  RecCopy (l := t ': nts) lts rts
   where
   recCopyInto _ lts prxy tgt# s# =
     let lbl :: FldProxy l
@@ -232,9 +233,7 @@ type family RecAll (c :: u -> Constraint) (rs :: [u]) :: Constraint where
 type family KeyDoesNotExist (l :: Symbol) (lts :: [*]) :: Constraint where
   KeyDoesNotExist l '[] = 'True ~ 'True
   KeyDoesNotExist l (l := t ': lts) =
-    TypeError
-      ( 'Text "Duplicate key " ':<>: 'Text l
-      )
+    TypeError ('Text "Duplicate key " ':<>: 'ShowType l)
   KeyDoesNotExist q (l := t ': lts) = KeyDoesNotExist q lts
 
 type family Reverse (xs :: [*]) where
@@ -292,15 +291,7 @@ get ::
   FldProxy l ->
   Rec lts ->
   v
-get _ (MkRec vec#) =
-  let !(I# index#) =
-        fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts)))
-      size# = sizeofSmallArray# vec#
-      anyVal :: Any
-      anyVal =
-        case indexSmallArray# vec# (size# -# index# -# 1#) of
-          (# a# #) -> a#
-   in unsafeCoerce# anyVal
+get _ r = unsafeIndex r (fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts))))
 {-# INLINE get #-}
 
 -- | Alias for 'get'
@@ -308,6 +299,16 @@ get _ (MkRec vec#) =
 (&.) = flip get
 
 infixl 3 &.
+
+unsafeIndex :: forall lts v. Rec lts -> Int -> v
+unsafeIndex (MkRec vec#) (I# index#) =
+  let size# = sizeofSmallArray# vec#
+      anyVal :: Any
+      anyVal =
+        case indexSmallArray# vec# (size# -# index# -# 1#) of
+          (# a# #) -> a#
+   in unsafeCoerce# anyVal
+{-# INLINE unsafeIndex #-}
 
 type family Set l lts v where
   Set l '[] v = '[]
@@ -413,6 +414,32 @@ combine lts rts =
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
 {-# INLINE combine #-}
+
+-- | Append two records
+append ::
+  forall lhs rhs res.
+  ( KnownNat (RecSize lhs),
+    KnownNat (RecSize rhs),
+    res ~ RecAppend lhs rhs
+  ) =>
+  Rec lhs ->
+  Rec rhs ->
+  Rec res
+append (MkRec lts#) (MkRec rts#) =
+  let !(I# sizeL#) = fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs))
+      !(I# sizeR#) = fromIntegral $ natVal' (proxy# :: Proxy# (RecSize rhs))
+   in runST' $
+        ST $ \s# ->
+          case newSmallArray# (sizeL# +# sizeR#) (error "No value") s# of
+            (# s'#, arr# #) ->
+              -- We copy rts first because the values are stored in the opposite order
+              case copySmallArray# rts# 0# arr# 0# sizeR# s'# of
+                s''# ->
+                  case copySmallArray# lts# 0# arr# sizeR# sizeL# s''# of
+                    s'''# ->
+                      case unsafeFreezeSmallArray# arr# s'''# of
+                        (# s''''#, a# #) -> (# s''''#, MkRec a# #)
+{-# INLINE append #-}
 
 -- | Union two records (left-biased)
 union ::
@@ -532,7 +559,7 @@ reflectRec ::
   [r]
 reflectRec _ f r =
   reverse $
-    recApply (\(Dict :: Dict (c a)) s v xs -> (f s v : xs)) r (Proxy :: Proxy lts) []
+    recApply (\(Dict :: Dict (c a)) s v xs -> (f s v : xs)) r (Proxy :: Proxy lts) 0 []
 {-# INLINE reflectRec #-}
 
 -- | Fold over all elements of a record
@@ -545,7 +572,7 @@ reflectRecFold ::
   r ->
   r
 reflectRecFold _ f r =
-  recApply (\(Dict :: Dict (c a)) s v x -> f s v x) r (Proxy :: Proxy lts)
+  recApply (\(Dict :: Dict (c a)) s v x -> f s v x) r (Proxy :: Proxy lts) 0
 {-# INLINE reflectRecFold #-}
 
 -- | Convert all elements of a record to a 'String'
@@ -572,57 +599,33 @@ recJsonParser options =
 
 -- | Machinery needed to implement 'reflectRec'
 class RecApply (rts :: [*]) (lts :: [*]) c where
-  recApply :: (forall a. Dict (c a) -> String -> a -> b -> b) -> Rec rts -> Proxy lts -> b -> b
+  recApply :: (forall a. Dict (c a) -> String -> a -> b -> b) -> Rec rts -> Proxy lts -> Int -> b -> b
 
 instance RecApply rts '[] c where
-  recApply _ _ _ b = b
+  recApply _ _ _ _ b = b
 
-instance
-  ( KnownSymbol l,
-    RecApply rts (RemoveAccessTo l lts) c,
-    Has l rts v,
-    c v
-  ) =>
-  RecApply rts (l := t ': lts) c
-  where
-  recApply f r (_ :: Proxy (l := t ': lts)) b =
+instance (KnownSymbol l, RecApply rts lts c, c t) => RecApply rts (l := t ': lts) c where
+  recApply f r (_ :: Proxy (l := t ': lts)) i b =
     let lbl :: FldProxy l
         lbl = FldProxy
-        val = get lbl r
+        val = unsafeIndex r i :: t
         res = f Dict (symbolVal lbl) val b
-        pNext :: Proxy (RemoveAccessTo l (l := t ': lts))
+        pNext :: Proxy lts
         pNext = Proxy
-     in recApply f r pNext res
+     in recApply f r pNext (i + 1) res
 
 -- | Machinery to implement equality
 class RecEq (rts :: [*]) (lts :: [*]) where
-  recEq :: Rec rts -> Rec rts -> Proxy lts -> Bool
+  recEq :: Rec rts -> Rec rts -> Proxy lts -> Int -> Bool
 
 instance RecEq rts '[] where
-  recEq _ _ _ = True
+  recEq _ _ _ _ = True
 
-instance
-  ( RecEq rts (RemoveAccessTo l lts),
-    Has l rts v,
-    Eq v
-  ) =>
-  RecEq rts (l := t ': lts)
-  where
-  recEq r1 r2 (_ :: Proxy (l := t ': lts)) =
-    let lbl :: FldProxy l
-        lbl = FldProxy
-        val = get lbl r1
-        val2 = get lbl r2
-        res = val == val2
-        pNext :: Proxy (RemoveAccessTo l (l := t ': lts))
-        pNext = Proxy
-     in res && recEq r1 r2 pNext
-
--- TODO: this probably slows typechecking in euler-ps, and should not be needed
-type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where
-  RemoveAccessTo l (l := t ': lts) = RemoveAccessTo l lts
-  RemoveAccessTo q (l := t ': lts) = (l := t ': RemoveAccessTo q lts)
-  RemoveAccessTo q '[] = '[]
+instance (RecEq rts lts, Eq t) => RecEq rts (l := t ': lts) where
+  recEq r1 r2 (_ :: Proxy (l := t ': lts)) i =
+    let val1 = unsafeIndex r1 i :: t
+        val2 = unsafeIndex r2 i :: t
+     in val1 == val2 && recEq r1 r2 (Proxy :: Proxy lts) (i + 1)
 
 -- | Machinery to implement parseJSON
 class RecJsonParse (lts :: [*]) where
@@ -650,23 +653,17 @@ instance
 
 -- | Machinery for NFData
 class RecNfData (lts :: [*]) (rts :: [*]) where
-  recNfData :: Proxy lts -> Rec rts -> ()
+  recNfData :: Proxy lts -> Rec rts -> Int -> ()
 
 instance RecNfData '[] rts where
-  recNfData _ _ = ()
+  recNfData _ _ i = ()
 
-instance
-  ( Has l rts v,
-    NFData v,
-    RecNfData (RemoveAccessTo l lts) rts
-  ) =>
-  RecNfData (l := t ': lts) rts
-  where
-  recNfData (_ :: (Proxy (l := t ': lts))) r =
-    let !v = get (FldProxy :: FldProxy l) r
-        pNext :: Proxy (RemoveAccessTo l (l := t ': lts))
+instance (NFData t, RecNfData lts rts) => RecNfData (l := t ': lts) rts where
+  recNfData (_ :: (Proxy (l := t ': lts))) r i =
+    let !v = unsafeIndex r i :: t
+        pNext :: Proxy lts
         pNext = Proxy
-     in deepseq v (recNfData pNext r)
+     in deepseq v (recNfData pNext r (i + 1))
 
 -- | Conversion helper to bring a Haskell type to a record. Note that the
 -- native Haskell type must be an instance of 'Generic'
@@ -766,8 +763,11 @@ instance NoConstraint x
 -- | Convert a record into a list of fields.
 --
 -- | Not present in original superrecord
-getFields :: RecApply fields fields NoConstraint => Rec fields -> [Any]
-getFields =
-  reflectRec @NoConstraint
-    Proxy
-    (\_ val -> unsafeCoerce (FldProxy @"" := val))
+getFields :: Rec lts -> [Any]
+getFields (MkRec vec#) =
+  [ case indexSmallArray# vec# index# of
+      (# a #) -> a
+    | I# index# <- [size - 1, size - 2 .. 0]
+  ]
+  where
+    size = I# (sizeofSmallArray# vec#)

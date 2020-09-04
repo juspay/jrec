@@ -1,9 +1,14 @@
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+
 module JRecSpec (spec) where
 
 import Control.Lens ((&), (.~), (^.))
 import JRec
 import Test.Hspec
 import GHC.Stack
+import Data.Generics.Labels
 
 data Pair a = Pair !a !a
   deriving (Eq, Show)
@@ -19,11 +24,10 @@ spec = do
     (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
       `shouldBe` Rec (#u := 5, #a := 5, #b := 6, #a := 2)
   describe "eq" $ do 
-    -- eq can compare only the first matching field, discarding the rest. 
     it "fails if first matching field doesn't compare" $ do
       Rec (#a := 1, #a := 2) `shouldNotBe` Rec (#a := 0, #a := 2)
-    it "succeeds if first matching field compares" $ do
-      Rec (#a := 1, #a := 2) `shouldBe` Rec (#a := 1, #a := 0)
+    it "fails even if the first matching field compares" $ do
+      Rec (#a := 1, #a := 2) `shouldNotBe` Rec (#a := 1, #a := 0)
   it "show" $ do
     show (Rec ()) `shouldBe` "{}"
     show (Rec (#foo := True)) `shouldBe` "{foo = True}"
@@ -59,10 +63,6 @@ spec = do
       Rec (#a := 1) `append` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
     it "append with duplicates" $ do
-      -- TODO: `append` will not deal with duplicates; based on current
-      -- implementation, the last value (here, 8) will overwrite all duplicate
-      -- fields. See `union` if you want to deal with duplicates sensibly.
-      pendingWith "append should just append?"
       let r1 = Rec (#b := 5, #a := 6)
           r2 = Rec (#c := 7, #a := 8)
       r1 `append` r2

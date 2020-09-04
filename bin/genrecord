@@ -14,6 +14,9 @@ main = do
   putStrLn
     "-- Generated with cabal run -v0 bin/genrecord > src/JRec/Tuple.hs\n\
     \\n\
+    \{-# LANGUAGE TypeOperators, DataKinds, FlexibleInstances, MultiParamTypeClasses #-}\n\
+    \{-# LANGUAGE FunctionalDependencies, GADTs, UndecidableInstances #-}\n\
+    \\n\
     \module JRec.Tuple where\n\
     \\n\
     \import qualified JRec.Internal as R\n\
@@ -46,10 +49,7 @@ genInstance i =
           exprList
           exprTuple
       constraints =
-        tupleF $
-          format "R.RecApply {} {} R.NoConstraint" typeList typeList :
-          [format "n{} ~ n{}'" j j :: Builder | j <- [1 .. i]]
-            ++ [format "v{} ~ v{}'" j j :: Builder | j <- [1 .. i]]
+        tupleF [format "(n{} R.:= v{}) ~ f{}" j j j :: Builder | j <- [1 .. i]]
    in format
         "instance {} => RecTuple {} {} where\n\
         \  {}\n\
@@ -61,8 +61,8 @@ genInstance i =
         fromTuple
         toTuple
   where
-    -- '[n1' R.:= v1', n2' R.:= v2']
-    typeList = "'" <> listF [format "n{}' R.:= v{}'" j j :: Builder | j <- [1 .. i]]
+    -- '[f1, f2]
+    typeList = "'" <> listF ["f" <> show j | j <- [1 .. i]]
     -- (n1 R.:= v1, n2 R.:= v2)
     typeTuple = tupleF [format "n{} R.:= v{}" j j :: Builder | j <- [1 .. i]]
     -- (f1, f2)

@@ -1,6 +1,17 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module JRec
   ( unField,
@@ -10,7 +21,7 @@ module JRec
     append,
     union,
     insert,
-    insertOrSet
+    insertOrSet,
   )
 where
 
@@ -25,11 +36,14 @@ import GHC.Generics
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
-import JRec.Field
-import JRec.Internal (Rec, (:=) (..))
+import JRec.Internal (Rec, append, (:=) (..))
 import qualified JRec.Internal as R
 import JRec.Tuple
 import Unsafe.Coerce
+
+-- $setup
+--
+-- >>> :set -XOverloadedLabels
 
 ----------------------------------------------------------------------------
 -- unField
@@ -42,29 +56,10 @@ unField _ (_ R.:= value) = value
 -- Other operations
 ----------------------------------------------------------------------------
 
--- Appends records, without removing duplicates.
+-- | Merges records, removing duplicates
 --
--- O(n + m) type check complexity.
+-- Left-biased. Does not sort.
 --
--- FIXME: See spec for a bug when there are duplicates.
-append ::
-  forall lhs rhs res.
-  ( KnownNat (R.RecSize lhs),
-    KnownNat (R.RecSize rhs),
-    KnownNat (R.RecSize lhs + R.RecSize rhs),
-    res ~ R.RecAppend lhs rhs,
-    R.RecCopy lhs lhs res,
-    R.RecCopy rhs rhs res
-  ) =>
-  Rec lhs ->
-  Rec rhs ->
-  Rec res
-append = R.combine
-
--- Merges records, removing duplicates
---
--- Left-biased. Does not sort. 
--- 
 -- O(n * m) type check complexity.
 union ::
   forall lhs rhs res.
@@ -80,21 +75,29 @@ union ::
   Rec res
 union = R.union
 
--- | Insert a field into a record that does not already contain it
+-- | Insert a field into a record.
 --
 -- O(n) type check complexity.
-insert :: 
-  forall label value lts res. 
+--
+-- Will fail at compile time if the record already contains the field:
+--
+-- >>> (#a := '1') `insert` Rec (#b := '2', #a := '0')
+-- ...
+-- ... Duplicate key "a"
+-- ...
+insert ::
+  forall label value lts res.
   ( KnownNat (1 + R.RecSize lts),
     KnownNat (R.RecSize lts),
     KnownSymbol label,
     R.RecCopy lts lts res,
     res ~ ((label := value) : lts),
-    R.RemoveAccessTo label lts ~ lts
-  ) => 
+    R.KeyDoesNotExist label lts
+  ) =>
   label := value ->
-  Rec lts -> Rec res
-insert = R.combine . Rec 
+  Rec lts ->
+  Rec res
+insert = R.append . Rec
 
 -- | Insert a field into a record. Set it if it already exists
 --
