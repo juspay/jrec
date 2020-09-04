@@ -35,7 +35,6 @@ Run `bin/test` for fast-reloading tests. When library sources change, the test s
 * Documentation.
 * Expose all internals.
 * `-- NOTE: doesn't use 'KeyDoesNotExist'` — fix this.
-* `RemoveAccessTo` — can we get rid of it?
 
 ## Acknowledgement
 

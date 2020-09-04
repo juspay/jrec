@@ -10,7 +10,7 @@ module JRec
     append,
     union,
     insert,
-    insertOrSet
+    insertOrSet,
   )
 where
 
@@ -42,6 +42,11 @@ unField _ (_ R.:= value) = value
 -- Other operations
 ----------------------------------------------------------------------------
 
+type family Lacks (l :: Symbol) (lts :: [*]) :: Bool where
+  Lacks _ '[] = 'Tru
+  Lacks l (l := t ': lts) = 'False
+  Lacks l (_ ': lts) = Lacks l lts
+
 -- Appends records, without removing duplicates.
 --
 -- O(n + m) type check complexity.
@@ -63,8 +68,8 @@ append = R.combine
 
 -- Merges records, removing duplicates
 --
--- Left-biased. Does not sort. 
--- 
+-- Left-biased. Does not sort.
+--
 -- O(n * m) type check complexity.
 union ::
   forall lhs rhs res.
@@ -83,18 +88,19 @@ union = R.union
 -- | Insert a field into a record that does not already contain it
 --
 -- O(n) type check complexity.
-insert :: 
-  forall label value lts res. 
+insert ::
+  forall label value lts res.
   ( KnownNat (1 + R.RecSize lts),
     KnownNat (R.RecSize lts),
     KnownSymbol label,
     R.RecCopy lts lts res,
     res ~ ((label := value) : lts),
-    R.RemoveAccessTo label lts ~ lts
-  ) => 
+    Lacks label lts
+  ) =>
   label := value ->
-  Rec lts -> Rec res
-insert = R.combine . Rec 
+  Rec lts ->
+  Rec res
+insert = R.combine . Rec
 
 -- | Insert a field into a record. Set it if it already exists
 --
