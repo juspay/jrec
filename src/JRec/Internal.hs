@@ -72,6 +72,10 @@ instance
   showsPrec p (l := t) =
     showParen (p > 10) (showString ("#" ++ symbolVal l ++ " := " ++ show t))
 
+unpackAssign :: (label := value) -> value
+unpackAssign (_ := value) = value
+{-# INLINE unpackAssign #-}
+
 -- | A proxy witness for a label. Very similar to 'Proxy', but needed to implement
 -- a non-orphan 'IsLabel' instance
 data FldProxy (t :: Symbol)
@@ -125,25 +129,57 @@ instance (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => FromJSON (Rec lts) w
 instance RecNfData lts lts => NFData (Rec lts) where
   rnf = recNfData (Proxy :: Proxy lts)
 
+newtype ForallST a = ForallST {unForallST :: forall s. ST s a}
+
 -- Hack needed because $! doesn't have the same special treatment $ does to work with ST yet
 runST' :: (forall s. ST s a) -> a
 runST' !s = runST s
 
 -- | An empty record
 rnil :: Rec '[]
-rnil = unsafeRNil 0
+rnil = create (unsafeRNil 0)
 {-# INLINE rnil #-}
 
--- | An empty record with an initial size for the record
-unsafeRNil :: Int -> Rec '[]
+create :: (forall s. ST s (Rec xs)) -> Rec xs
+create = runST'
+
+unsafeRNil :: Int -> ST s (Rec '[])
 unsafeRNil (I# n#) =
-  runST' $
-    ST $ \s# ->
-      case newSmallArray# n# (error "No Value") s# of
-        (# s'#, arr# #) ->
-          case unsafeFreezeSmallArray# arr# s'# of
-            (# s''#, a# #) -> (# s''#, MkRec a# #)
+  ST $ \s# ->
+    case newSmallArray# n# (error "No value") s# of
+      (# s'#, arr# #) ->
+        case unsafeFreezeSmallArray# arr# s'# of
+          (# s''#, a# #) -> (# s''#, MkRec a# #)
 {-# INLINE unsafeRNil #-}
+
+-- | Prepend a record entry to a record 'Rec'. Assumes that the record was created with
+-- 'unsafeRNil' and still has enough free slots, mutates the original 'Rec' which should
+-- not be reused after
+--
+-- NOTE: doesn't use 'KeyDoesNotExist' because we rely on the fact that in
+-- euler-ps there were no duplicate keys
+unsafeRCons ::
+  forall l t lts size s.
+  ( RecSize lts ~ size,
+    KnownNat size
+    -- KeyDoesNotExist l lts
+  ) =>
+  l := t ->
+  Rec lts ->
+  ST s (Rec (l := t ': lts))
+unsafeRCons (_ := val) (MkRec vec#) =
+  ST $ \s# ->
+    case unsafeThawSmallArray# vec# s# of
+      (# s'#, arr# #) ->
+        -- Write the value to be cons'ed at the *end* (hence size#) of the
+        -- array, because `Rec` stores values in reverse order.
+        case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
+          s''# ->
+            case unsafeFreezeSmallArray# arr# s''# of
+              (# s'''#, a# #) -> (# s'''#, MkRec a# #)
+  where
+    !(I# size#) = fromIntegral $ natVal' (proxy# :: Proxy# size)
+{-# INLINE unsafeRCons #-}
 
 -- Not in superrecord
 recCopy :: forall lts rts. RecCopy lts lts rts => Rec lts -> Rec rts
@@ -188,36 +224,6 @@ instance
         size# = sizeofSmallMutableArray# tgt#
      in case writeSmallArray# tgt# (size# -# index# -# 1#) (unsafeCoerce# val) s# of
           s'# -> recCopyInto (Proxy :: Proxy nts) lts prxy tgt# s'#
-
--- | Prepend a record entry to a record 'Rec'. Assumes that the record was created with
--- 'unsafeRNil' and still has enough free slots, mutates the original 'Rec' which should
--- not be reused after
---
--- NOTE: doesn't use 'KeyDoesNotExist' because we rely on the fact that in
--- euler-ps there were no duplicate keys
-unsafeRCons ::
-  forall l t lts s.
-  ( RecSize lts ~ s,
-    KnownNat s
-    -- KeyDoesNotExist l lts
-  ) =>
-  l := t ->
-  Rec lts ->
-  Rec (l := t ': lts)
-unsafeRCons (_ := val) (MkRec vec#) =
-  runST' $
-    ST $ \s# ->
-      case unsafeThawSmallArray# vec# s# of
-        (# s'#, arr# #) ->
-          -- Write the value to be cons'ed at the *end* (hence size#) of the
-          -- array, because `Rec` stores values in reverse order.
-          case writeSmallArray# arr# size# (unsafeCoerce# val) s'# of
-            s''# ->
-              case unsafeFreezeSmallArray# arr# s''# of
-                (# s'''#, a# #) -> (# s'''#, MkRec a# #)
-  where
-    !(I# size#) = fromIntegral $ natVal' (proxy# :: Proxy# s)
-{-# INLINE unsafeRCons #-}
 
 type family RecAll (c :: u -> Constraint) (rs :: [u]) :: Constraint where
   RecAll c '[] = ()
@@ -456,13 +462,14 @@ insert ::
 insert (l := v) rts =
   let !(I# size#) =
         fromIntegral $ natVal' (proxy# :: Proxy# (RecSize res))
-   in runST' $
+   in runST' $ do
+        single <- unsafeRCons (l := v) =<< unsafeRNil 1
         ST $ \s# ->
           case newSmallArray# size# (error "No value") s# of
             (# s'#, arr# #) ->
               case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s'# of
                 s''# ->
-                  case recCopyInto (Proxy :: Proxy '[l := v]) (unsafeRCons (l := v) $ unsafeRNil 1) (Proxy :: Proxy res) arr# s''# of
+                  case recCopyInto (Proxy :: Proxy '[l := v]) single (Proxy :: Proxy res) arr# s''# of
                     s'''# ->
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
@@ -559,7 +566,7 @@ recJsonParser ::
   (JSONOptions -> Value -> Parser (Rec lts))
 recJsonParser options =
   withObject "Record" $ \o ->
-    recJsonParse options initSize o
+    (\(ForallST act) -> create act) <$> recJsonParse options initSize o
   where
     initSize = fromIntegral $ natVal' (proxy# :: Proxy# s)
 
@@ -619,10 +626,10 @@ type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where
 
 -- | Machinery to implement parseJSON
 class RecJsonParse (lts :: [*]) where
-  recJsonParse :: JSONOptions -> Int -> Object -> Parser (Rec lts)
+  recJsonParse :: JSONOptions -> Int -> Object -> Parser (ForallST (Rec lts))
 
 instance RecJsonParse '[] where
-  recJsonParse _ initSize _ = pure (unsafeRNil initSize)
+  recJsonParse _ initSize _ = pure (ForallST (unsafeRNil initSize))
 
 instance
   ( KnownSymbol l,
@@ -639,7 +646,7 @@ instance
         lbl = FldProxy
     rest <- recJsonParse options initSize obj
     (v :: t) <- obj .: T.pack (fieldTransform options (symbolVal lbl))
-    pure $ unsafeRCons (lbl := v) rest
+    pure $ ForallST (unsafeRCons (lbl := v) =<< unForallST rest)
 
 -- | Machinery for NFData
 class RecNfData (lts :: [*]) (rts :: [*]) where
@@ -680,7 +687,9 @@ instance
   ) =>
   FromNative (S1 ('MetaSel ('Just name) p s l) (Rec0 t)) '[name := t]
   where
-  fromNative' (M1 (K1 t)) = ((FldProxy :: FldProxy name) := t) `unsafeRCons` unsafeRNil 1
+  fromNative' (M1 (K1 t)) =
+    create $
+      unsafeRCons ((FldProxy :: FldProxy name) := t) =<< unsafeRNil 1
 
 instance
   ( FromNative l lhs,

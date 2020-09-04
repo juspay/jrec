@@ -30,9 +30,6 @@ in {
         packages = p: [ p.jrec ];
         buildInputs = with projectDrv; [
           cabal-install
-          ormolu
-          haskell-language-server
-          ghcid
         ];
       };
   in 

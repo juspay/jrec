@@ -1,0 +1,73 @@
+#!/usr/bin/env cabal
+
+{-# LANGUAGE OverloadedStrings #-}
+
+{- cabal:
+build-depends: base, fmt
+-}
+
+import Data.List
+import Fmt
+
+main = do
+  let n = 62 -- max tuple size
+  putStrLn
+    "-- Generated with cabal run -v0 bin/genrecord > src/JRec/Tuple.hs\n\
+    \\n\
+    \module JRec.Tuple where\n\
+    \\n\
+    \import qualified JRec.Internal as R\n\
+    \import Unsafe.Coerce\n\
+    \\n\
+    \class RecTuple tuple fields | tuple -> fields, fields -> tuple where\n\
+    \  fromTuple :: tuple -> R.Rec fields\n\
+    \  toTuple :: R.Rec fields -> tuple\n\
+    \\n\
+    \"
+  mapM_ (putStrLn . genInstance) [0 .. n]
+
+genInstance :: Int -> String
+genInstance 0 =
+  "instance RecTuple () '[] where\n\
+  \  fromTuple _ = R.rnil\n\
+  \  toTuple _ = ()\n\
+  \"
+genInstance i =
+  let fromTuple, toTuple, constraints :: Builder
+      fromTuple =
+        format
+          "fromTuple {} = R.create $ {} R.unsafeRNil {}"
+          exprTuple
+          consApps
+          i
+      toTuple =
+        format
+          "toTuple r = let {} = R.getFields r in unsafeCoerce {}"
+          exprList
+          exprTuple
+      constraints =
+        tupleF $
+          format "R.RecApply {} {} R.NoConstraint" typeList typeList :
+          [format "n{} ~ n{}'" j j :: Builder | j <- [1 .. i]]
+            ++ [format "v{} ~ v{}'" j j :: Builder | j <- [1 .. i]]
+   in format
+        "instance {} => RecTuple {} {} where\n\
+        \  {}\n\
+        \  {}\n\
+        \"
+        constraints
+        typeTuple
+        typeList
+        fromTuple
+        toTuple
+  where
+    -- '[n1' R.:= v1', n2' R.:= v2']
+    typeList = "'" <> listF [format "n{}' R.:= v{}'" j j :: Builder | j <- [1 .. i]]
+    -- (n1 R.:= v1, n2 R.:= v2)
+    typeTuple = tupleF [format "n{} R.:= v{}" j j :: Builder | j <- [1 .. i]]
+    -- (f1, f2)
+    exprTuple = tupleF ["f" <> show j | j <- [1 .. i]]
+    -- [f1, f2]
+    exprList = listF ["f" <> show j | j <- [1 .. i]]
+    -- R.unsafeRCons f1 $ R.unsafeRCons f2 $
+    consApps = mconcat [format "R.unsafeRCons f{} =<< " j :: Builder | j <- [1 .. i]]
