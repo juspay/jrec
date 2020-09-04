@@ -738,8 +738,9 @@ instance NoConstraint x
 -- | Convert a record into a list of fields.
 --
 -- | Not present in original superrecord
-getFields :: RecApply fields fields NoConstraint => Rec fields -> [Any]
-getFields =
-  reflectRec @NoConstraint
-    Proxy
-    (\_ val -> unsafeCoerce (FldProxy @"" := val))
+getFields :: Rec fields -> [Any]
+getFields (MkRec vec#) =
+  [ case indexSmallArray# vec# (size# -# index# -# 1#) of
+      (# a# #) -> a
+    | I# i <- [size -1, size -2 .. 0]
+  ]
