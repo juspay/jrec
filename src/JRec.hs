@@ -10,7 +10,7 @@ module JRec
     append,
     union,
     insert,
-    insertOrSet
+    insertOrSet,
   )
 where
 
@@ -21,7 +21,6 @@ import qualified "generic-lens" Data.Generics.Wrapped as GL
 import qualified "generic-optics" Data.Generics.Wrapped as GO
 import Data.Proxy
 import GHC.Exts (Any)
-import GHC.Generics
 import GHC.OverloadedLabels
 import GHC.TypeLits
 import Generic.Data
@@ -63,8 +62,8 @@ append = R.combine
 
 -- Merges records, removing duplicates
 --
--- Left-biased. Does not sort. 
--- 
+-- Left-biased. Does not sort.
+--
 -- O(n * m) type check complexity.
 union ::
   forall lhs rhs res.
@@ -83,18 +82,19 @@ union = R.union
 -- | Insert a field into a record that does not already contain it
 --
 -- O(n) type check complexity.
-insert :: 
-  forall label value lts res. 
+insert ::
+  forall label value lts res.
   ( KnownNat (1 + R.RecSize lts),
     KnownNat (R.RecSize lts),
     KnownSymbol label,
     R.RecCopy lts lts res,
     res ~ ((label := value) : lts),
     R.RemoveAccessTo label lts ~ lts
-  ) => 
+  ) =>
   label := value ->
-  Rec lts -> Rec res
-insert = R.combine . Rec 
+  Rec lts ->
+  Rec res
+insert = R.combine . Rec
 
 -- | Insert a field into a record. Set it if it already exists
 --
@@ -113,35 +113,6 @@ insertOrSet ::
   Rec rhs ->
   Rec res
 insertOrSet = R.insert
-
-----------------------------------------------------------------------------
--- Generic
-----------------------------------------------------------------------------
-
-type Sel name value = S1 ('MetaSel ('Just name) 'NoSourceUnpackedness 'NoSourceStrictness 'DecidedStrict) (Rec0 value)
-
-type family Sels fields where
-  Sels '[] = U1
-  Sels '[name R.:= value] = Sel name value
-  Sels ((name R.:= value) ': xs) = Sel name value :*: Sels xs
-
-type RecordRep fields =
-  D1
-    ('MetaData "Record" "Rec" "" 'False)
-    ( C1
-        ('MetaCons "Record" 'PrefixI 'True)
-        (Sels fields)
-    )
-
-instance
-  (R.FromNative (RecordRep fields) fields, R.ToNative (RecordRep fields) fields) =>
-  Generic (Rec fields)
-  where
-  type
-    Rep (Rec fields) =
-      RecordRep fields
-  from r = R.toNative' r
-  to rep = R.fromNative' rep
 
 ----------------------------------------------------------------------------
 -- generic-lens
