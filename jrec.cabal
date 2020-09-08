@@ -76,6 +76,7 @@ library
   exposed-modules:
     JRec
     JRec.Internal
+    JRec.Generic
   other-modules:
     JRec.Tuple
     JRec.Field

@@ -3,10 +3,11 @@
 module JRecShouldNotTypecheckSpec (spec) where
 
 import Control.Lens ((&), (.~), (^.))
+import GHC.Stack
 import JRec
+import JRec.Generic
 import Test.Hspec
 import Test.ShouldNotTypecheck
-import GHC.Stack
 
 spec :: Spec
 spec = do
