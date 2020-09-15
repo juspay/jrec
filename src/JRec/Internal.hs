@@ -34,6 +34,7 @@ import Data.Aeson.Types (Parser)
 import Data.Constraint
 import Data.Proxy
 import qualified Data.Text as T
+import Data.Type.Equality (type (==))
 import Data.Typeable
 import GHC.Base (Any, Int (..))
 import GHC.Generics
@@ -244,7 +245,15 @@ type family Reverse (xs :: [*]) where
 type family Insert (a :: *) (xs :: [*]) where
   Insert x '[] = x ': '[]
   Insert (a := v) (a := _ ': xs) = a := v ': xs
-  Insert a (x ': xs) = x ': Insert a xs
+  Insert (a := v) (a' := v' ': xs) =
+    If
+      (CmpSymbol a a' == 'LT)
+      (a := v ': a' := v' ': xs)
+      (a' := v' ': Insert (a := v) xs)
+
+type family If (c :: Bool) (t :: k) (f :: k) where
+  If True t f = t
+  If False t f = f
 
 type family Union xs ys where
   Union xs '[] = xs
