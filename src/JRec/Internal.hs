@@ -631,9 +631,19 @@ class RecJsonParse (lts :: [*]) where
 instance RecJsonParse '[] where
   recJsonParse _ initSize _ = pure (ForallST (unsafeRNil initSize))
 
+class FromJSON a => ParseField a where
+  parseField :: Object -> T.Text -> Parser a
+
+instance FromJSON a => ParseField a where
+  parseField = (.:)
+
+instance {-# OVERLAPS #-} FromJSON a => ParseField (Maybe a) where
+  parseField = (.:?)
+
 instance
   ( KnownSymbol l,
     FromJSON t,
+    ParseField t,
     RecJsonParse lts,
     RecSize lts ~ s,
     KnownNat s,
@@ -645,7 +655,7 @@ instance
     let lbl :: FldProxy l
         lbl = FldProxy
     rest <- recJsonParse options initSize obj
-    (v :: t) <- obj .: T.pack (fieldTransform options (symbolVal lbl))
+    (v :: t) <- obj `parseField` T.pack (fieldTransform options (symbolVal lbl))
     pure $ ForallST (unsafeRCons (lbl := v) =<< unForallST rest)
 
 -- | Machinery for NFData
