@@ -1,9 +1,10 @@
 module JRecSpec (spec) where
 
 import Control.Lens ((&), (.~), (^.))
+import Data.Aeson
+import GHC.Stack
 import JRec
 import Test.Hspec
-import GHC.Stack
 
 data Pair a = Pair !a !a
   deriving (Eq, Show)
@@ -16,10 +17,10 @@ spec = do
     Pair (Rec (#a := 1)) (Rec (#a := 2))
       `shouldNotBe` Pair (Rec (#a := 2)) (Rec (#a := 2))
   it "polymorphic" $ do
-    (Rec (#u := True, #a := 5, #b := 6, #a := 2 ) & #u .~ 5)
+    (Rec (#u := True, #a := 5, #b := 6, #a := 2) & #u .~ 5)
       `shouldBe` Rec (#u := 5, #a := 5, #b := 6, #a := 2)
-  describe "eq" $ do 
-    -- eq can compare only the first matching field, discarding the rest. 
+  describe "eq" $ do
+    -- eq can compare only the first matching field, discarding the rest.
     it "fails if first matching field doesn't compare" $ do
       Rec (#a := 1, #a := 2) `shouldNotBe` Rec (#a := 0, #a := 2)
     it "succeeds if first matching field compares" $ do
@@ -76,8 +77,8 @@ spec = do
           r2 = Rec (#c := 7, #a := 8)
       r1 `union` r2
         `shouldBe` Rec (#b := 5, #a := 6, #c := 7)
-  describe "insert" $ do 
-    it "simple insert" $ do 
+  describe "insert" $ do
+    it "simple insert" $ do
       (#a := 1) `insert` Rec (#b := 2, #c := 3)
         `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
   describe "insertOrSet" $ do
@@ -87,3 +88,17 @@ spec = do
     it "overwrite" $ do
       insertOrSet (#c := 1) (Rec (#b := 2, #c := 3))
         `shouldBe` Rec (#b := 2, #c := 1)
+  describe "optional fields" $ do
+    it "encode" $ do
+      encode (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
+        `shouldBe` "{\"a\":1,\"b\":null}"
+    it "encode" $ do
+      encode (Rec (#a := (1 :: Int), #b := (Just 2 :: Maybe Int)))
+        `shouldBe` "{\"a\":1,\"b\":2}"
+    it "decode" $ do
+      decode "{\"a\": 1, \"b\": null}"
+        `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
+      decode "{\"a\": 1}"
+        `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
+      decode "{\"a\": 1, \"b\": 2}"
+        `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Just 2 :: Maybe Int)))
