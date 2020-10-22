@@ -91,14 +91,14 @@ spec = do
   describe "optional fields" $ do
     it "encode" $ do
       encode (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
-        `shouldBe` "{\"a\":1,\"b\":null}"
+        `shouldBe` "{\"a\":1}"
     it "encode" $ do
       encode (Rec (#a := (1 :: Int), #b := (Just 2 :: Maybe Int)))
         `shouldBe` "{\"a\":1,\"b\":2}"
     it "decode" $ do
-      decode "{\"a\": 1, \"b\": null}"
-        `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
       decode "{\"a\": 1}"
+        `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
+      decode "{\"a\": 1, \"b\": null}"
         `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Nothing :: Maybe Int)))
       decode "{\"a\": 1, \"b\": 2}"
         `shouldBe` Just (Rec (#a := (1 :: Int), #b := (Just 2 :: Maybe Int)))

@@ -32,6 +32,7 @@ import qualified Control.Monad.State as S
 import Data.Aeson
 import Data.Aeson.Types (Parser)
 import Data.Constraint
+import Data.Maybe (catMaybes)
 import Data.Proxy
 import qualified Data.Text as T
 import Data.Typeable
@@ -115,7 +116,7 @@ instance RecEq lts lts => Eq (Rec lts) where
 
 #ifdef WITH_AESON
 instance
-  ( RecApply lts lts ToJSON
+  ( RecApply lts lts EncodeField
   ) =>
   ToJSON (Rec lts)
   where
@@ -124,6 +125,7 @@ instance
 
 instance (RecSize lts ~ s, KnownNat s, RecJsonParse lts) => FromJSON (Rec lts) where
   parseJSON = recJsonParser defaultJSONOptions
+
 #endif
 
 instance RecNfData lts lts => NFData (Rec lts) where
@@ -552,13 +554,26 @@ reflectRecFold _ f r =
 showRec :: forall lts. (RecApply lts lts Show) => Rec lts -> [(String, String)]
 showRec = reflectRec @Show Proxy (\k v -> (k, show v))
 
-recToValue :: forall lts. (RecApply lts lts ToJSON) => JSONOptions -> Rec lts -> Value
-recToValue options r =
-  object $ reflectRec @ToJSON Proxy (\k v -> (T.pack (fieldTransform options k), toJSON v)) r
+class ToJSON a => EncodeField a where
+  encodeField :: a -> Maybe Value
+  encodeKV :: T.Text -> a -> Series
 
-recToEncoding :: forall lts. (RecApply lts lts ToJSON) => JSONOptions -> Rec lts -> Encoding
+instance ToJSON a => EncodeField a where
+  encodeField = pure . toJSON
+  encodeKV = (.=)
+
+instance {-# OVERLAPS #-} ToJSON a => EncodeField (Maybe a) where
+  encodeField = fmap toJSON
+  encodeKV _ Nothing = mempty
+  encodeKV k v = k .= v
+
+recToValue :: forall lts. (RecApply lts lts EncodeField) => JSONOptions -> Rec lts -> Value
+recToValue options r =
+  object $ catMaybes $ reflectRec @EncodeField Proxy (\k v -> (T.pack (fieldTransform options k),) <$> encodeField v) r
+
+recToEncoding :: forall lts. (RecApply lts lts EncodeField) => JSONOptions -> Rec lts -> Encoding
 recToEncoding options r =
-  pairs $ mconcat $ reflectRec @ToJSON Proxy (\k v -> (T.pack (fieldTransform options k) .= v)) r
+  pairs $ mconcat $ reflectRec @EncodeField Proxy (\k v -> (T.pack (fieldTransform options k) `encodeKV` v)) r
 
 recJsonParser ::
   forall lts s.
