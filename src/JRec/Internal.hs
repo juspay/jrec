@@ -114,6 +114,10 @@ instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
   {-# INLINE (==) #-}
 
+instance RecOrd lts lts => Ord (Rec lts) where
+  compare (a :: Rec lts) (b :: Rec lts) = recOrd a b (Proxy :: Proxy lts)
+  {-# INLINE compare #-}
+
 #ifdef WITH_AESON
 instance
   ( RecApply lts lts EncodeField
@@ -632,6 +636,30 @@ instance
         pNext :: Proxy (RemoveAccessTo l (l := t ': lts))
         pNext = Proxy
      in res && recEq r1 r2 pNext
+
+-- | Machinery to implement order
+class RecEq rts lts => RecOrd (rts :: [*]) (lts :: [*]) where
+  recOrd :: Rec rts -> Rec rts -> Proxy lts -> Ordering
+
+instance RecOrd rts '[] where
+  recOrd _ _ _ = EQ
+
+instance
+  ( RecOrd rts (RemoveAccessTo l lts),
+    Has l rts v,
+    Ord v
+  ) =>
+  RecOrd rts (l := t ': lts)
+  where
+  recOrd r1 r2 (_ :: Proxy (l := t ': lts)) =
+    let lbl :: FldProxy l
+        lbl = FldProxy
+        val1 = get lbl r1
+        val2 = get lbl r2
+        ord = compare val1 val2
+        pNext :: Proxy (RemoveAccessTo l (l := t ': lts))
+        pNext = Proxy
+     in if ord == EQ then recOrd r1 r2 pNext else ord
 
 -- TODO: this probably slows typechecking in euler-ps, and should not be needed
 type family RemoveAccessTo (l :: Symbol) (lts :: [*]) :: [*] where

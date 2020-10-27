@@ -25,6 +25,18 @@ spec = do
       Rec (#a := 1, #a := 2) `shouldNotBe` Rec (#a := 0, #a := 2)
     it "succeeds if first matching field compares" $ do
       Rec (#a := 1, #a := 2) `shouldBe` Rec (#a := 1, #a := 0)
+  it "ord" $ do
+    -- Same as eq when there is duplicated keys.
+    -- Only the first occurence of that key is considered.
+    compare (Rec (#a := 1, #a := 2)) (Rec (#a := 1, #a := 2)) `shouldBe` EQ
+    compare (Rec (#a := 1, #a := 2)) (Rec (#a := 1, #a := 3)) `shouldBe` EQ
+    compare (Rec (#a := 1, #a := 2)) (Rec (#a := 2, #a := 1)) `shouldBe` LT
+    compare (Rec (#a := 1, #a := 2)) (Rec (#a := 0, #a := 3)) `shouldBe` GT
+    compare (Rec (#a := 1, #b := 2)) (Rec (#a := 1, #b := 2)) `shouldBe` EQ
+    compare (Rec (#a := 1, #b := 2)) (Rec (#a := 1, #b := 3)) `shouldBe` LT
+    compare (Rec (#a := 1, #b := 2)) (Rec (#a := 2, #b := 1)) `shouldBe` LT
+    compare (Rec (#a := 1, #b := 2)) (Rec (#a := 0, #b := 3)) `shouldBe` GT
+    compare (Rec (#a := 1, #a := 2, #b := 3)) (Rec (#a := 1, #a := 3, #b := 2)) `shouldBe` GT
   it "show" $ do
     show (Rec ()) `shouldBe` "{}"
     show (Rec (#foo := True)) `shouldBe` "{foo = True}"
