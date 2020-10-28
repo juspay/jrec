@@ -187,6 +187,20 @@ unsafeRCons (_ := val) (MkRec vec#) =
     !(I# size#) = fromIntegral $ natVal' (proxy# :: Proxy# size)
 {-# INLINE unsafeRCons #-}
 
+-- | Get the i-th value as Any unsafely.
+-- No boundary check. Also ther caller is responsible for coerceing to correct type.
+-- Intented for internal use only.
+unsafeGet ::
+  forall lts.
+  Int ->
+  Rec lts ->
+  Any
+unsafeGet (I# index#) (MkRec vec#) =
+  let size# = sizeofSmallArray# vec#
+  in case indexSmallArray# vec# (size# -# index# -# 1#) of
+       (# a# #) -> a#
+{-# INLINE unsafeGet #-}
+
 -- Not in superrecord
 recCopy :: forall lts rts. RecCopy lts lts rts => Rec lts -> Rec rts
 recCopy r@(MkRec vec#) =
@@ -298,15 +312,9 @@ get ::
   FldProxy l ->
   Rec lts ->
   v
-get _ (MkRec vec#) =
-  let !(I# index#) =
-        fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts)))
-      size# = sizeofSmallArray# vec#
-      anyVal :: Any
-      anyVal =
-        case indexSmallArray# vec# (size# -# index# -# 1#) of
-          (# a# #) -> a#
-   in unsafeCoerce# anyVal
+get _ r =
+  let !index = fromIntegral (natVal' (proxy# :: Proxy# (RecTyIdxH 0 l lts)))
+  in unsafeCoerce $ unsafeGet index r
 {-# INLINE get #-}
 
 -- | Alias for 'get'

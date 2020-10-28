@@ -42,12 +42,10 @@ genInstance i =
           i
       toTuple =
         format
-          "toTuple r = let {} = R.getFields r in unsafeCoerce {}"
-          exprList
-          exprTuple
+          "toTuple r = let n = R.FldProxy :: R.FldProxy \"\" in unsafeCoerce {}"
+          exprGetTuple
       constraints =
         tupleF $
-          format "R.RecApply {} {} R.NoConstraint" typeList typeList :
           [format "n{} ~ n{}'" j j :: Builder | j <- [1 .. i]]
             ++ [format "v{} ~ v{}'" j j :: Builder | j <- [1 .. i]]
    in format
@@ -71,3 +69,5 @@ genInstance i =
     exprList = listF ["f" <> show j | j <- [1 .. i]]
     -- R.unsafeRCons f1 $ R.unsafeRCons f2 $
     consApps = mconcat [format "R.unsafeRCons f{} =<< " j :: Builder | j <- [1 .. i]]
+    -- (n R.:= R.unsafeGet 0 r, n R.:= R.unsafeGet 1 r)
+    exprGetTuple = tupleF [format "n R.:= R.unsafeGet {} r" j :: Builder | j <- [0 .. i-1]]
