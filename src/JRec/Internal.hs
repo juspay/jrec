@@ -403,26 +403,20 @@ type family RecDeepTy (ps :: r) (lts :: [*]) :: * where
 -- NOTE: changed from original superrecord to not require a 'Sort'
 combine ::
   forall lhs rhs res.
-  ( KnownNat (RecSize lhs),
-    KnownNat (RecSize rhs),
-    KnownNat (RecSize lhs + RecSize rhs),
-    res ~ RecAppend lhs rhs,
-    RecCopy lhs lhs res,
-    RecCopy rhs rhs res
-  ) =>
+  res ~ RecAppend lhs rhs =>
   Rec lhs ->
   Rec rhs ->
   Rec res
-combine lts rts =
-  let !(I# size#) =
-        fromIntegral $ natVal' (proxy# :: Proxy# (RecSize lhs + RecSize rhs))
+combine (MkRec arr0#) (MkRec arr1#) =
+  let !size0# = sizeofSmallArray# arr0#
+      !size1# = sizeofSmallArray# arr1#
    in runST' $
         ST $ \s# ->
-          case newSmallArray# size# (error "No value") s# of
+          case newSmallArray# (size0# +# size1#) (error "No value") s# of
             (# s'#, arr# #) ->
-              case recCopyInto (Proxy :: Proxy lhs) lts (Proxy :: Proxy res) arr# s'# of
+              case copySmallArray# arr1# 0# arr# 0# size1# s'# of
                 s''# ->
-                  case recCopyInto (Proxy :: Proxy rhs) rts (Proxy :: Proxy res) arr# s''# of
+                  case copySmallArray# arr0# 0# arr# size1# size0# s''# of
                     s'''# ->
                       case unsafeFreezeSmallArray# arr# s'''# of
                         (# s''''#, a# #) -> (# s''''#, MkRec a# #)
@@ -492,13 +486,7 @@ insert (l := v) rts =
 -- | Alias for 'combine'
 (++:) ::
   forall lhs rhs res.
-  ( KnownNat (RecSize lhs),
-    KnownNat (RecSize rhs),
-    KnownNat (RecSize lhs + RecSize rhs),
-    res ~ RecAppend lhs rhs,
-    RecCopy lhs lhs res,
-    RecCopy rhs rhs res
-  ) =>
+  res ~ RecAppend lhs rhs =>
   Rec lhs ->
   Rec rhs ->
   Rec res

@@ -71,11 +71,17 @@ spec = do
     it "simple append" $ do
       Rec (#a := 1) `append` Rec (#b := 2)
         `shouldBe` Rec (#a := 1, #b := 2)
+      Rec () `append` Rec (#b := 2)
+        `shouldBe` Rec (#b := 2)
+      Rec (#a := 1) `append` Rec ()
+        `shouldBe` Rec (#a := 1)
+      Rec (#a := 1, #b := 2) `append` Rec (#c := 3)
+        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+      Rec (#a := 1) `append` Rec (#b := 2, #c := 3)
+        `shouldBe` Rec (#a := 1, #b := 2, #c := 3)
+      Rec (#a := 1, #b := 2) `append` Rec (#c := 3, #d := 4)
+        `shouldBe` Rec (#a := 1, #b := 2, #c := 3, #d := 4)
     it "append with duplicates" $ do
-      -- TODO: `append` will not deal with duplicates; based on current
-      -- implementation, the last value (here, 8) will overwrite all duplicate
-      -- fields. See `union` if you want to deal with duplicates sensibly.
-      pendingWith "append should just append?"
       let r1 = Rec (#b := 5, #a := 6)
           r2 = Rec (#c := 7, #a := 8)
       r1 `append` r2
