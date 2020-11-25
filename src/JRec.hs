@@ -49,13 +49,7 @@ unField _ (_ R.:= value) = value
 -- FIXME: See spec for a bug when there are duplicates.
 append ::
   forall lhs rhs res.
-  ( KnownNat (R.RecSize lhs),
-    KnownNat (R.RecSize rhs),
-    KnownNat (R.RecSize lhs + R.RecSize rhs),
-    res ~ R.RecAppend lhs rhs,
-    R.RecCopy lhs lhs res,
-    R.RecCopy rhs rhs res
-  ) =>
+  res ~ R.RecAppend lhs rhs =>
   Rec lhs ->
   Rec rhs ->
   Rec res
