@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeApplications #-}
@@ -128,6 +129,7 @@ type RecordRep fields =
         (Sels fields)
     )
 
+#ifdef WITH_GENERICS
 instance
   (R.FromNative (RecordRep fields) fields, R.ToNative (RecordRep fields) fields) =>
   Generic (Rec fields)
@@ -137,6 +139,7 @@ instance
       RecordRep fields
   from r = R.toNative' r
   to rep = R.fromNative' rep
+#endif
 
 ----------------------------------------------------------------------------
 -- generic-lens
