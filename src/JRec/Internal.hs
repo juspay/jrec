@@ -43,8 +43,6 @@ import GHC.OverloadedLabels
 import GHC.Prim
 import GHC.ST (ST (..), runST)
 import GHC.TypeLits
-import Generic.Data (gshowsPrec)
-import Generic.Data.Internal.Show (GShow)
 import qualified Optics.Lens as OL
 import Unsafe.Coerce
 import Prelude
