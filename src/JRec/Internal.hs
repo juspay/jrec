@@ -32,6 +32,7 @@ import qualified Control.Monad.State as S
 import Data.Aeson
 import Data.Aeson.Types (Parser)
 import Data.Constraint
+import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Proxy
 import qualified Data.Text as T
@@ -102,13 +103,12 @@ defaultJSONOptions = JSONOptions {fieldTransform = id}
 type role Rec representational
 
 instance
-  ( RecApply lts lts Show,
-    GShow Proxy (Rep (Rec lts)),
-    Generic (Rec lts)
+  ( RecApply lts lts Show
   ) =>
   Show (Rec lts)
   where
-  show = (\x -> if null x then "{}" else x) . unwords . drop 1 . words . flip (gshowsPrec 0) ""
+  show rec = "{" ++ formatted ++ "}"
+    where formatted = intercalate ", " $ map (\(k, v) -> k ++ " = " ++ v) $ showRec rec
 
 instance RecEq lts lts => Eq (Rec lts) where
   (==) (a :: Rec lts) (b :: Rec lts) = recEq a b (Proxy :: Proxy lts)
