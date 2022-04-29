@@ -24,6 +24,13 @@ flag with-aeson
   -- with instances by default
   default: True
 
+flag with-generics
+  description: Enable GHC.Generics instances
+  -- don't let the solver fiddle with the flag
+  manual: True
+  -- with instances by default
+  default: True
+
 -- A common stanza to share with tests, so that ghcid (bin/test) will reload
 -- instantly when the library sources change (without us having to restart it).
 common library-common 
@@ -81,13 +88,15 @@ library
     JRec.Field
   if flag(with-aeson)
     cpp-options: -DWITH_AESON
+  if flag(with-generics)
+    cpp-options: -DWITH_GENERICS
 
 test-suite jrec-test
   import: library-common
   type: exitcode-stdio-1.0
   hs-source-dirs: test, src
   main-is: Spec.hs
-  cpp-options: -DWITH_AESON
+  cpp-options: -DWITH_AESON -DWITH_GENERICS
   build-depends:
     base,
     hspec,
