@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               jrec
-version:            0.1.0.0
+version:            0.1.0.1
 synopsis:           anonymous records for busy people
 
 -- description:
