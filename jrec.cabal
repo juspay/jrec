@@ -37,7 +37,7 @@ common library-common
   default-language:   Haskell2010
   build-depends:
       aeson
-    , base          >=4.13 && <4.15
+    , base          >=4.13 && <4.17
     , constraints
     , deepseq
     , generic-data
