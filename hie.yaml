@@ -1,6 +1,17 @@
 cradle:
-  cabal:
-    - path: "./src"
-      component: "lib:jrec"
-    - path: "./test"
-      component: "test:jrec-test"
+  multi:
+    - path: ./Setup.hs
+      config:
+        cradle:
+          direct:
+            arguments:
+              - "-package Cabal"
+              - "-package base"
+    - path: ./
+      config:
+        cradle:
+          cabal:
+            - path: "./src"
+              component: "lib:jrec"
+            - path: "./test"
+              component: "test:jrec-test"
