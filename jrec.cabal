@@ -97,6 +97,9 @@ test-suite jrec-test
   hs-source-dirs: test, src
   main-is: Spec.hs
   cpp-options: -DWITH_AESON -DWITH_GENERICS
+  other-modules:
+    JRecShouldNotTypecheckSpec
+    JRecSpec
   build-depends:
     base,
     hspec,
