@@ -4,15 +4,10 @@ on:
   push:
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix: 
-        ghc: ['ghc884', 'ghc8101']
-        os: [ubuntu-latest]
-    name: GHC ${{ matrix.ghc }}
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v10
+    - uses: nixbuild/nix-quick-install-action@v21
     - uses: cachix/cachix-action@v6
       with:
         name: juspay-nau
@@ -20,4 +15,4 @@ jobs:
         # Only needed for private caches
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: Build and test 🔧
-      run: nix-build -j4 --argstr compiler ${{ matrix.ghc }}
+      run: nix build -j 4 -L
