@@ -10,16 +10,8 @@
       perSystem = { self', inputs', pkgs, system, ... }:
         let
           inherit (gitignore.lib) gitignoreSource;
-          fixCyclicReference = drv:
-            pkgs.haskell.lib.overrideCabal drv (_: {
-              enableSeparateBinOutput = false;
-            });
           overlay = self: super: {
             jrec = self.callCabal2nix "jrec" (gitignoreSource ./.) { };
-            # Workaround for https://github.com/NixOS/nixpkgs/issues/140774
-            haskell-language-server = super.haskell-language-server.overrideScope (lself: lsuper: {
-              ormolu = fixCyclicReference super.ormolu;
-            });
           };
           haskellPackages' = pkgs.haskellPackages.extend overlay;
         in
