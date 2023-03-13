@@ -2,4 +2,4 @@
 set -xe
 
 # NOTE: ghcid should be run with -W to allow warnings from should-not-typecheck
-nix-shell --pure --run "ghcid $* -W -c 'cabal new-repl test:jrec-test' -T \":main $*\""
+nix develop -c sh -c "ghcid $* -W -c 'cabal new-repl test:jrec-test' -T \":main $*\""

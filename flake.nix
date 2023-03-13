@@ -23,6 +23,7 @@
             packages = p: [ p.jrec ];
             buildInputs = with ghcVersions.ghc92; [
               cabal-install
+              ghcid
               haskell-language-server
             ];
           };
