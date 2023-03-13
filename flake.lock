@@ -34,6 +34,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-ghc88": {
+      "locked": {
+        "lastModified": 1596466290,
+        "narHash": "sha256-V1vrlYfVEdW4iauUc58LCtorSxLLF+X/PhjD5+dQjeQ=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "76f2e271a2ef9de3734dcc9d366a42d6bfb18e82",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "76f2e271a2ef",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "dir": "lib",
@@ -55,7 +71,8 @@
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-ghc88": "nixpkgs-ghc88"
       }
     }
   },

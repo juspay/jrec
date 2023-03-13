@@ -13,3 +13,5 @@ jobs:
           experimental-features = nix-command flakes
     - name: Build and test 🔧
       run: nix build -j 4 -L
+    - name: Build and test (GHC 8.8) 🔧
+      run: nix build -j 4 -L .#jrec-ghc88
