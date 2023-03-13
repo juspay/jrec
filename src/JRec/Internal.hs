@@ -46,6 +46,7 @@ import GHC.TypeLits
 import qualified Optics.Lens as OL
 import Unsafe.Coerce
 import Prelude
+import qualified Data.Aeson.Key as Key
 
 -- | Field named @l@ labels value of type @t@ adapted from the awesome /labels/ package.
 -- Example: @(#name := \"Chris\") :: (\"name\" := String)@
@@ -558,16 +559,16 @@ class ToJSON a => EncodeField a where
 
 instance ToJSON a => EncodeField a where
   encodeField = pure . toJSON
-  encodeKV = (.=)
+  encodeKV k v = Key.fromText k .= v
 
 instance {-# OVERLAPS #-} ToJSON a => EncodeField (Maybe a) where
   encodeField = fmap toJSON
   encodeKV _ Nothing = mempty
-  encodeKV k v = k .= v
+  encodeKV k v = Key.fromText k .= v
 
 recToValue :: forall lts. (RecApply lts lts EncodeField) => JSONOptions -> Rec lts -> Value
 recToValue options r =
-  object $ catMaybes $ reflectRec @EncodeField Proxy (\k v -> (T.pack (fieldTransform options k),) <$> encodeField v) r
+  object $ catMaybes $ reflectRec @EncodeField Proxy (\k v -> (Key.fromString (fieldTransform options k),) <$> encodeField v) r
 
 recToEncoding :: forall lts. (RecApply lts lts EncodeField) => JSONOptions -> Rec lts -> Encoding
 recToEncoding options r =
@@ -672,10 +673,10 @@ class FromJSON a => ParseField a where
   parseField :: Object -> T.Text -> Parser a
 
 instance FromJSON a => ParseField a where
-  parseField = (.:)
+  parseField o k = o .: Key.fromText k
 
 instance {-# OVERLAPS #-} FromJSON a => ParseField (Maybe a) where
-  parseField = (.:?)
+  parseField o k = o .:? Key.fromText k
 
 instance
   ( KnownSymbol l,
